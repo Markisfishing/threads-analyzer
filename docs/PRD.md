@@ -2,7 +2,7 @@
 
 | 項目 | 內容 |
 |---|---|
-| 版本 | v0.2（已回覆 Q1–Q4，待最終確認） |
+| 版本 | v0.3（已回覆 Q1–Q4，T1 spike 完成） |
 | 日期 | 2026-11-20 |
 | 狀態 | 🟡 待確認 — 確認範圍、優先級、驗收標準後才進入開發 |
 | 來源 | 考題文件「AI Vibe Coding 考題：Threads 帳號貼文爬取與數據分析」 |
@@ -95,7 +95,7 @@
   1. 開啟 `https://www.threads.com/@{username}`（headless Chromium，固定 UA、zh-TW locale）。
   2. 判斷頁面狀態：帳號不存在／私人帳號／正常（§5 E2）。
   3. 擷取帳號資訊：顯示名稱、粉絲數。
-  4. **分批捲動**：每次捲動後等待新貼文出現，每批解析一次 DOM；連續 3 次捲動無新貼文即停止。
+  4. **分批捲動＋攔截 JSON**（依 T1 spike）：貼文資料取自頁面內嵌 JSON 與捲動時的 `/graphql` 回應，不解析 DOM（DOM 為虛擬列表，只用來偵測登入牆與帳號狀態）。只保留 `user.username` 等於目標帳號的貼文（過濾轉發他人貼文）；連續 3 次捲動無新貼文即停止；最後依 `taken_at` 由新到舊截斷至 `max_posts`。欄位對應見 `docs/spikes/T1-scrape-feasibility.md`。
   4a. **登入 fallback**：若未登入模式停止時篇數 < `max_posts`，或遇到登入牆，且 Worker 有設定 `THREADS_STORAGE_STATE`，則以登入狀態重開瀏覽器、從頭捲動續爬（已取得的貼文以 `post_id` 去重）。`analysis_jobs.scrape_mode` 記錄 `anonymous` / `authenticated`，報告中顯示。登入狀態失效（被導向登入頁）→ log `warn`，以已取得資料繼續（§5 E12）。
   5. 每篇擷取：貼文 ID／URL、發文時間（`<time datetime>`）、文字內容、like、reply、repost、quote 數。
   6. 每批寫入 `posts`（upsert，以 `(job_id, post_id)` 去重），更新 `scraped_count`。
@@ -439,7 +439,7 @@ flowchart TD
 
 ### 技術選型
 - Web：Next.js（App Router）＋ TypeScript ＋ Tailwind ＋ `@supabase/ssr` ＋ Recharts。
-- Worker：Python 3.11 ＋ Playwright ＋ pandas ＋ jieba ＋ scikit-learn（TF-IDF）＋ supabase-py ＋ Groq（OpenAI 相容 SDK）。
+- Worker：Python 3.12 ＋ Playwright ＋ pandas ＋ jieba ＋ scikit-learn（TF-IDF）＋ supabase-py ＋ Groq（OpenAI 相容 SDK）。
 - DB / Auth：Supabase（Postgres ＋ Auth ＋ RLS）。
 - Worker 執行環境：GitHub Actions（ubuntu-latest）。
 
@@ -509,3 +509,4 @@ flowchart TD
 |---|---|---|
 | 2026-11-20 | v0.1 | 初稿：依考題與決策 D1–D5 建立 |
 | 2026-11-20 | v0.2 | 依 Q1–Q4 回覆：加入登入 fallback（F3、E12、AC3.6–3.7）；LLM 改為 Groq＋規則 fallback，升為 Must（F12、E13、AC12）；Worker 改由 GitHub Actions 執行（D5、§7.1、T6a、E14）；多帳號比較與匯出改為 Should（D6）；更新環境變數、安全性、風險 R5–R7、拆解表 |
+| 2026-11-20 | v0.3 | T1 spike 完成：未登入 17–28 篇、登入 57–70 篇；F3 改為攔截 JSON、過濾非本人貼文、截斷至 max_posts；Python 改 3.12 |
