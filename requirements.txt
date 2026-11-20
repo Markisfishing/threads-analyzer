@@ -1,3 +1,5 @@
 # Worker 執行環境（Python 3.12）
 playwright==1.65.2
 httpx==0.28.1
+jieba==0.42.1
+tzdata==2026.6
