@@ -83,6 +83,16 @@ export default async function JobPage({ params, searchParams }: PageProps<"/dash
                 {job.error_message}
               </p>
             )}
+            {job.scraped_count > 0 && (
+              <p className="flex flex-wrap gap-3" data-testid="export-links">
+                <a href={`/api/jobs/${job.id}/export?format=csv`} className="underline" download>
+                  下載貼文 CSV
+                </a>
+                <a href={`/api/jobs/${job.id}/export?format=json`} className="underline" download>
+                  下載完整 JSON
+                </a>
+              </p>
+            )}
           </section>
           {result && <Report result={result} />}
         </>
