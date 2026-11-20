@@ -18,3 +18,14 @@ storage_state.json
 
 # spike 輸出
 spike/out/
+
+# Next.js / Vercel
+/.next/
+/out/
+/build
+/coverage
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+*.pem
+npm-debug.log*
