@@ -2,7 +2,7 @@
 
 | 項目 | 內容 |
 |---|---|
-| 版本 | v0.3（已回覆 Q1–Q4，T1 spike 完成） |
+| 版本 | v0.4（T1–T14、T17 完成；待部署 T6a、T15） |
 | 日期 | 2026-11-20 |
 | 狀態 | 🟡 待確認 — 確認範圍、優先級、驗收標準後才進入開發 |
 | 來源 | 考題文件「AI Vibe Coding 考題：Threads 帳號貼文爬取與數據分析」 |
@@ -67,7 +67,7 @@
 - **處理流程**：
   1. 註冊 → Supabase 寄驗證信 → 驗證後可登入。
   2. 登入成功 → 建立 session（cookie）→ 導向 `/dashboard`。
-  3. Next.js middleware 檢查 session，未登入存取受保護頁 → 302 導向 `/login?next=<原路徑>`。
+  3. Next.js `proxy.ts`（Next 16 取代 middleware）檢查 session，未登入存取受保護頁 → 302 導向 `/login?next=<原路徑>`。
   4. 首次登入時以 DB trigger 建立 `profiles` 紀錄。
 - **輸出**：登入狀態、使用者 Email 顯示於右上角、登出按鈕。
 - **使用者可見狀態**：`未登入` / `登入中…` / `登入失敗（訊息）` / `已登入`。
@@ -143,7 +143,7 @@
   3. 對每組套用**同一套 NLP 方法**：
      - 關鍵字：TF-IDF（以全帳號貼文為語料）取每組 Top 10 特徵詞。
      - 文字特徵：平均字數、問句比例（含「？」）、emoji 比例、hashtag／mention／連結比例。
-     - 情緒傾向：以中文情緒詞典（如 NTUSD）計算正負向比例。
+     - 情緒傾向：以內建中英文情緒詞表計算正負向詞比例（NTUSD 授權與體積不適合內建，改用精簡詞表）。
   4. 規則模板比對 high vs low 的差異，產出「成功因素」與「失敗因素」敘述（例：high 組問句比例 60% vs low 組 10% → 「以提問結尾的貼文較容易引發回覆」）。
 - **輸出**：`analysis_results.groups`（JSON），每組含代表貼文、特徵數值、敘述。
 
@@ -439,7 +439,7 @@ flowchart TD
 
 ### 技術選型
 - Web：Next.js（App Router）＋ TypeScript ＋ Tailwind ＋ `@supabase/ssr` ＋ Recharts。
-- Worker：Python 3.12 ＋ Playwright ＋ pandas ＋ jieba ＋ scikit-learn（TF-IDF）＋ supabase-py ＋ Groq（OpenAI 相容 SDK）。
+- Worker：Python 3.12 ＋ Playwright ＋ jieba ＋ httpx（直接呼叫 Supabase PostgREST 與 Groq OpenAI 相容 API）＋ tzdata。TF-IDF、Spearman、分位數以純 Python 實作，不引入 pandas／scikit-learn，讓 GitHub Actions 安裝更快。
 - DB / Auth：Supabase（Postgres ＋ Auth ＋ RLS）。
 - Worker 執行環境：GitHub Actions（ubuntu-latest）。
 
@@ -455,7 +455,7 @@ flowchart TD
 | T1 | **Playwright 爬取可行性 spike**：手動腳本對 3 個公開帳號測試未登入／登入兩種模式可取得篇數與欄位，並產生 `storageState` | Must | T0 | 1h | 記錄兩種模式實際篇數、選擇器、登入牆出現時機；登入模式 ≥ 30 篇；**若仍 < 30 篇則回到 PRD 調整（R1）** |
 | T2 | 專案骨架：Next.js、Python worker、`.env.example`、README 骨架 | Must | T0 | 0.5h | `npm run dev` 與 `python -m worker --help` 可執行 |
 | T3 | Supabase schema ＋ RLS migrations ＋ profiles trigger | Must | T2 | 1h | migration 可套用；AC1.4、AC1.5 隔離測試通過 |
-| T4 | 登入／註冊／middleware 保護 | Must | T3 | 1h | AC1.1–1.3 |
+| T4 | 登入／註冊／路由保護（proxy.ts） | Must | T3 | 1h | AC1.1–1.3 |
 | T5 | 建立任務表單＋任務列表＋狀態輪詢 | Must | T4 | 1h | AC2.1–2.3、AC8.1 |
 | T6 | Worker 狀態機＋job_logs（`run --job-id` 與 `poll` 兩種入口） | Must | T3 | 1h | 手動插入 job 可被執行並更新狀態；E10 殭屍任務處理 |
 | T6a | GitHub Actions workflow＋Next.js `workflow_dispatch` 觸發 | Must | T5,T6 | 1h | AC3.8；E9、E14 |
@@ -510,3 +510,4 @@ flowchart TD
 | 2026-11-20 | v0.1 | 初稿：依考題與決策 D1–D5 建立 |
 | 2026-11-20 | v0.2 | 依 Q1–Q4 回覆：加入登入 fallback（F3、E12、AC3.6–3.7）；LLM 改為 Groq＋規則 fallback，升為 Must（F12、E13、AC12）；Worker 改由 GitHub Actions 執行（D5、§7.1、T6a、E14）；多帳號比較與匯出改為 Should（D6）；更新環境變數、安全性、風險 R5–R7、拆解表 |
 | 2026-11-20 | v0.3 | T1 spike 完成：未登入 17–28 篇、登入 57–70 篇；F3 改為攔截 JSON、過濾非本人貼文、截斷至 max_posts；Python 改 3.12 |
+| 2026-11-20 | v0.4 | 依實作更新：Next.js 16 以 `proxy.ts` 取代 middleware、關閉 cacheComponents；Worker 移除 pandas／scikit-learn／supabase-py，改用 httpx 與純 Python 統計；情緒分析改內建詞表；T12–T14、T17 完成 |
