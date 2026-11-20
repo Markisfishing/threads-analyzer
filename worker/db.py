@@ -32,6 +32,7 @@ class JobStore(Protocol):
     def list_posts(self, job_id: str) -> list[dict]: ...
     def save_results(self, row: dict) -> None: ...
     def reset_zombies(self) -> int: ...
+    def mark_crashed(self, job_id: str, run_url: str = "") -> bool: ...
 
 
 class SupabaseStore:
@@ -88,6 +89,19 @@ class SupabaseStore:
         rows = self._req("PATCH", "analysis_jobs",
                          params={"id": f"eq.{job_id}", "status": "neq.cancelled", "select": "id"},
                          json={"status": status, **fields}, prefer="return=representation")
+        return bool(rows)
+
+    def mark_crashed(self, job_id: str, run_url: str = "") -> bool:
+        """E14：GitHub Actions 執行失敗時，若任務仍未到終態 → failed / WORKER_CRASHED。"""
+        fields: dict[str, Any] = {"status": "failed", "error_code": "WORKER_CRASHED",
+                                  "error_message": "分析服務執行失敗，可重跑", "finished_at": now_iso()}
+        if run_url:
+            fields["run_url"] = run_url
+        rows = self._req("PATCH", "analysis_jobs",
+                         params={"id": f"eq.{job_id}", "status": f"in.({','.join(ACTIVE)})", "select": "id,user_id"},
+                         json=fields, prefer="return=representation")
+        for row in rows or []:
+            self.log(row, "error", "system", "Worker 執行失敗（GitHub Actions），任務標記為失敗")
         return bool(rows)
 
     def reset_zombies(self, stale_after: timedelta = ZOMBIE_AFTER, job_ids: list[str] | None = None) -> int:

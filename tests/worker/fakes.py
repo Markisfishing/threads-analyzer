@@ -62,3 +62,9 @@ class MemoryStore:
 
     def reset_zombies(self):
         return 0
+
+    def mark_crashed(self, job_id, run_url=""):
+        if self.jobs[job_id]["status"] not in ("queued", "scraping", "cleaning", "analyzing"):
+            return False
+        self.jobs[job_id].update(status="failed", error_code="WORKER_CRASHED")
+        return True

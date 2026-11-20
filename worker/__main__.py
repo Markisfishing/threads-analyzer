@@ -2,6 +2,7 @@
 
   python -m worker run --job-id <uuid>   執行單一任務（GitHub Actions 使用）
   python -m worker poll [--once]         輪詢 queued 任務（本機開發／備援）
+  python -m worker mark-crashed --job-id <uuid>  執行失敗時標記任務（GitHub Actions if: failure()）
   python -m worker check-config          檢查環境變數
 """
 from __future__ import annotations
@@ -64,6 +65,16 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0 if final in ("completed", "partial", "cancelled") else 3
 
 
+def cmd_mark_crashed(args: argparse.Namespace) -> int:
+    _setup_logging()
+    s = load_settings()
+    if not _require(s):
+        return 1
+    changed = _store(s).mark_crashed(args.job_id, args.run_url)
+    logging.info("任務 %s %s", args.job_id, "已標記為 WORKER_CRASHED" if changed else "已是終態，未變更")
+    return 0
+
+
 def cmd_poll(args: argparse.Namespace) -> int:
     from worker.pipeline import run_job
     from worker.stages import default_stages
@@ -108,6 +119,11 @@ def build_parser() -> argparse.ArgumentParser:
     pl = sub.add_parser("poll", help="輪詢並執行 queued 任務")
     pl.add_argument("--once", action="store_true", help="處理完目前排隊的任務就結束")
     pl.set_defaults(func=cmd_poll)
+
+    mc = sub.add_parser("mark-crashed", help="Worker 執行失敗時把未結束的任務標記為失敗")
+    mc.add_argument("--job-id", required=True)
+    mc.add_argument("--run-url", default="")
+    mc.set_defaults(func=cmd_mark_crashed)
 
     sub.add_parser("check-config", help="檢查環境變數").set_defaults(func=cmd_check_config)
     return p

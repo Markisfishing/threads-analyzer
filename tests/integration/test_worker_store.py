@@ -109,3 +109,24 @@ def test_reset_zombies(http, user, store):
     # 心跳仍新的任務不會被重設
     store.claim_job(job["id"])
     assert store.reset_zombies(stale_after=timedelta(minutes=15), job_ids=[job["id"]]) == 0
+
+
+def test_mark_crashed_only_touches_unfinished_jobs(http, user, store):
+    """E14：workflow 失敗 → 未結束任務標為 WORKER_CRASHED；已結束或已取消的不變。"""
+    queued = new_job(http, user, "crash.queued")
+    assert store.mark_crashed(queued["id"], "https://github.com/x/y/actions/runs/1") is True
+    job = store.get_job(queued["id"])
+    assert job["status"] == "failed"
+    assert job["error_code"] == "WORKER_CRASHED"
+    assert job["run_url"].endswith("/runs/1")
+    assert job["finished_at"]
+
+    done = new_job(http, user, "crash.done")
+    store.update_job(done["id"], status="completed")
+    assert store.mark_crashed(done["id"]) is False
+    assert store.get_job(done["id"])["status"] == "completed"
+
+    cancelled = new_job(http, user, "crash.cancelled")
+    store.update_job(cancelled["id"], status="cancelled")
+    assert store.mark_crashed(cancelled["id"]) is False
+    assert store.get_job(cancelled["id"])["status"] == "cancelled"

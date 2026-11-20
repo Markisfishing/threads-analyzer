@@ -1,0 +1,79 @@
+# Threads Analyzer Worker（PRD D5、T6a、E14）
+# Next.js 建立任務後以 workflow_dispatch 觸發，一次執行一個任務。
+#
+# 需要的 Repository secrets：
+#   SUPABASE_URL                 Supabase 專案網址
+#   SUPABASE_SERVICE_ROLE_KEY    service role / secret key（只放這裡，不放 Vercel）
+#   GROQ_API_KEY                 選填；沒有則使用規則模板產生建議
+#   THREADS_STORAGE_STATE        選填；storage_state.json 的 base64（登入模式）
+#
+# 不設定全域 concurrency：GitHub 只保留一個等待中的執行，其餘會被直接取消，任務會卡在 queued。
+
+name: worker
+run-name: worker ${{ inputs.job_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: analysis_jobs.id
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      JOB_ID: ${{ inputs.job_id }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      THREADS_STORAGE_STATE: ${{ secrets.THREADS_STORAGE_STATE }}
+      HEADLESS: "true"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Validate job id
+        id: validate
+        run: |
+          if ! [[ "$JOB_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+            echo "::error::job_id 不是有效的 UUID"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+
+      - name: Install Chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: python -m playwright install --with-deps chromium
+
+      - name: Install Chromium system dependencies
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: python -m playwright install-deps chromium
+
+      - name: Run job
+        run: python -m worker run --job-id "$JOB_ID" --run-url "$RUN_URL"
+
+      - name: Mark job as crashed
+        if: (failure() || cancelled()) && steps.validate.outcome == 'success'
+        run: python -m worker mark-crashed --job-id "$JOB_ID" --run-url "$RUN_URL"
