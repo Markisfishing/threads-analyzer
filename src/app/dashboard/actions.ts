@@ -3,10 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { ACTIVE_STATUSES, clampMaxPosts, normalizeUsername } from "@/lib/jobs";
+import { ACTIVE_STATUSES, clampMaxPosts, formatTaipei, normalizeUsername } from "@/lib/jobs";
 import { triggerWorker } from "@/lib/worker-trigger";
 
-export type CreateJobState = { error?: string; target?: string };
+export type CreateJobState = {
+  error?: string;
+  target?: string;
+  maxPosts?: number;
+  /** 24 小時內已有完成結果（F11）：讓使用者選擇用快取或強制重新爬取 */
+  cache?: { jobId: string; username: string; finishedLabel: string };
+};
+
+const CACHE_HOURS = 24;
 
 /** 建立分析任務（PRD F2、AC2.1–2.3）。 */
 export async function createJob(_: CreateJobState, formData: FormData): Promise<CreateJobState> {
@@ -28,6 +36,27 @@ export async function createJob(_: CreateJobState, formData: FormData): Promise<
     .limit(1)
     .maybeSingle();
   if (existing) redirect(`/dashboard/jobs/${existing.id}?notice=duplicate`);
+
+  // 24h 快取（F11）：除非使用者選擇「強制重新爬取」
+  if (formData.get("force") !== "1") {
+    const since = new Date(Date.now() - CACHE_HOURS * 3600_000).toISOString();
+    const { data: cached } = await supabase
+      .from("analysis_jobs")
+      .select("id,finished_at")
+      .eq("target_username", username)
+      .eq("status", "completed")
+      .gte("finished_at", since)
+      .order("finished_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (cached) {
+      return {
+        target: rawTarget,
+        maxPosts,
+        cache: { jobId: cached.id, username, finishedLabel: formatTaipei(cached.finished_at) },
+      };
+    }
+  }
 
   const { data, error } = await supabase
     .from("analysis_jobs")
