@@ -19,7 +19,7 @@ function readForm(formData: FormData) {
 
 /** 將 Supabase 錯誤轉為使用者可讀訊息；不洩漏帳號是否存在（PRD E1）。 */
 function loginErrorMessage(code?: string, message?: string) {
-  if (code === "email_not_confirmed") return "請先到信箱完成驗證後再登入";
+  if (code === "email_not_confirmed") return "請先到信箱完成驗證後再登入（找不到信請檢查垃圾郵件匣）";
   if (code === "over_request_rate_limit" || code === "over_email_send_rate_limit")
     return "嘗試次數過多，請稍後再試";
   if (code === "invalid_credentials" || /invalid login/i.test(message ?? "")) return "Email 或密碼錯誤";
@@ -56,7 +56,7 @@ export async function signUp(_: AuthState, formData: FormData): Promise<AuthStat
     return { error: "註冊失敗，請稍後再試", email };
   }
   // 不論 Email 是否已註冊都顯示相同訊息，避免洩漏帳號是否存在
-  return { message: "已寄出驗證信，請到信箱點擊連結完成註冊。", email };
+  return { message: "已寄出驗證信，請到信箱點擊連結完成註冊。若幾分鐘內沒收到，請檢查垃圾郵件匣。", email };
 }
 
 export async function signOut() {
