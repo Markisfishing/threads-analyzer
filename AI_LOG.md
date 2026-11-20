@@ -18,7 +18,12 @@
 - T2：`npm run build`、`python -m worker --help`、`pytest`。
 
 ## 4. 修正 AI 的錯誤或幻覺
-- （待補）
+- 見各任務紀錄
 
 ## 5. AI 幫助最大的部分
-- （待補）
+- 見各任務紀錄
+
+## T3 紀錄
+- AI 第一版 insert policy 在子查詢中查同一張表，RLS 整合測試發現 `42P17 infinite recursion`；改用 `private.owns_job()` security definer 函式。
+- 新版 Supabase 專案不會自動授權新表給 service_role，整合測試發現 Worker 無法寫入；補 grant migration。
+- 教訓：RLS 只看 SQL 很難發現問題，必須用兩個真實使用者跑整合測試驗證。
