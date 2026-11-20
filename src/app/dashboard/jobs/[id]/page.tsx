@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { JOB_COLUMNS, formatTaipei, isActive, type Job } from "@/lib/jobs";
 import type { AnalysisResult } from "@/lib/report";
 import { StatusBadge } from "../../StatusBadge";
+import { JobActions } from "./JobActions";
 import { JobProgress } from "./JobProgress";
 import { Report } from "./report/Report";
 
@@ -51,7 +52,18 @@ export default async function JobPage({ params, searchParams }: PageProps<"/dash
         {displayName && <span className="text-[var(--chart-ink-2)]">{displayName}</span>}
         <StatusBadge status={job.status} />
         <span className="text-sm opacity-70">建立於 {formatTaipei(job.created_at)}</span>
+        <div className="ml-auto">
+          <JobActions jobId={job.id} active={isActive(job.status)} />
+        </div>
       </header>
+      {job.parent_job_id && (
+        <p className="text-sm opacity-70">
+          此任務重跑自{" "}
+          <Link href={`/dashboard/jobs/${job.parent_job_id}`} className="underline">
+            先前的分析
+          </Link>
+        </p>
+      )}
 
       {isActive(job.status) ? (
         <JobProgress initial={job} />

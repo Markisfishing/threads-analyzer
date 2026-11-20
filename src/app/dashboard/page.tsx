@@ -6,7 +6,8 @@ import { StatusBadge } from "./StatusBadge";
 
 export const metadata = { title: "我的分析｜Threads Analyzer" };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
+  const sp = await searchParams;
   const { supabase } = await requireUser();
   const { data, error } = await supabase
     .from("analysis_jobs")
@@ -19,6 +20,11 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold">我的分析</h1>
       <NewJobForm />
+      {sp.notice === "deleted" && (
+        <p role="status" className="rounded-lg border border-foreground/20 p-3 text-sm">
+          已刪除分析。
+        </p>
+      )}
 
       {error && <p role="alert" className="text-sm text-red-600">讀取任務失敗，請重新整理</p>}
 
