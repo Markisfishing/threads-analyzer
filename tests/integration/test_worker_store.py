@@ -63,7 +63,7 @@ def test_claim_run_complete_and_user_can_read(http, user, store):
     assert claimed and claimed["status"] == "scraping" and claimed["attempt"] == 1
     assert store.claim_job(job["id"]) is None  # 不可重複領取
 
-    final = run_job(store, claimed, scrape=fake_scrape(31), clean=lambda j, p: p, analyze=analyze)
+    final = run_job(store, claimed, scrape=fake_scrape(31), clean=lambda j, p, m: p, analyze=analyze)
     assert final == "completed"
 
     # 使用者（RLS）可讀到結果與日誌
@@ -94,7 +94,7 @@ def test_cancel_not_overwritten(http, user, store):
         assert r.status_code == 204, r.text
         return ScrapeResult(posts=[{"job_id": job["id"], "user_id": job["user_id"], "post_id": "A", "post_url": "u"}])
 
-    assert run_job(store, claimed, scrape=scrape_then_user_cancels, clean=lambda j, p: p, analyze=analyze) == "cancelled"
+    assert run_job(store, claimed, scrape=scrape_then_user_cancels, clean=lambda j, p, m: p, analyze=analyze) == "cancelled"
     j = http.get(f"{REST}/analysis_jobs?id=eq.{job['id']}", headers=user.h).json()[0]
     assert j["status"] == "cancelled"
 

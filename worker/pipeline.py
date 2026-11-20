@@ -2,8 +2,8 @@
 
 各階段以函式注入，方便測試與逐步實作：
   scrape(job, ctx)   -> ScrapeResult      爬取並分批寫入原始貼文
-  clean(job, posts)  -> list[dict]        清理後的貼文列（寫回 posts）
-  analyze(job, posts, meta) -> dict       analysis_results 列內容（summary/top_posts/groups/insights/generator）
+  clean(job, posts, meta) -> list[dict]   清理後的貼文列（寫回 posts）
+  analyze(job, posts, meta, ctx) -> dict  analysis_results 列內容；可就地更新 posts 的 group_label（分析後寫回）
 """
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ class JobContext:
 
 
 Scraper = Callable[[dict, JobContext], ScrapeResult]
-Cleaner = Callable[[dict, list[dict]], list[dict]]
+Cleaner = Callable[[dict, list[dict], dict], list[dict]]
 Analyzer = Callable[[dict, list[dict], dict, JobContext], dict]
 
 
@@ -98,7 +98,7 @@ def run_job(store: JobStore, job: dict, *, scrape: Scraper, clean: Cleaner, anal
 
         # ---------------- 清理
         _transition(store, jid, "cleaning")
-        cleaned = clean(job, raw)
+        cleaned = clean(job, raw, meta)
         store.upsert_posts(cleaned)
         ctx.log("info", "clean", f"清理完成，{len(cleaned)} 篇")
 
@@ -110,6 +110,7 @@ def run_job(store: JobStore, job: dict, *, scrape: Scraper, clean: Cleaner, anal
             ctx.log("error", "analyze", f"{e.code}: {e.message}")
             _finish(store, jid, "failed", e.code, e.message)
             return "failed"
+        store.upsert_posts(cleaned)  # 寫回分析時標記的 group_label
         store.save_results({"job_id": jid, "user_id": job["user_id"], **row})
         ctx.log("info", "analyze", f"分析完成（{row.get('generator', '?')}）")
 

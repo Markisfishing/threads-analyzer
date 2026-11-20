@@ -21,7 +21,7 @@ def scraper(n, **kw):
     return _scrape
 
 
-def identity_clean(job, posts):
+def identity_clean(job, posts, meta):
     return posts
 
 

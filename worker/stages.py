@@ -17,7 +17,7 @@ def default_stages(settings: Settings) -> tuple[Scraper, Cleaner, Analyzer]:
     try:
         from worker.cleaning import clean_posts  # T8
     except ImportError:  # pragma: no cover
-        def clean_posts(job, posts):
+        def clean_posts(job, posts, meta):
             return posts
 
     try:
