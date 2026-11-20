@@ -12,9 +12,16 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
             Threads Analyzer
           </Link>
           <div className="flex items-center gap-3 text-sm">
-            <span className="hidden opacity-70 sm:inline" data-testid="user-email">
+            <Link
+              href="/dashboard/account"
+              className="hidden opacity-70 hover:underline sm:inline"
+              data-testid="user-email"
+            >
               {user.email}
-            </span>
+            </Link>
+            <Link href="/dashboard/account" className="opacity-70 hover:underline sm:hidden">
+              帳號
+            </Link>
             <form action={signOut}>
               <button type="submit" className="rounded-full border border-foreground/20 px-3 py-1">
                 登出

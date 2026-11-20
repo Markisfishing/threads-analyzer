@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-// 首頁：產品簡介與登入入口（登入功能於 T4 實作）
+// 首頁：產品簡介與登入入口
 export default function Home() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-6 px-4 py-16">
@@ -17,6 +17,11 @@ export default function Home() {
           登入開始分析
         </Link>
       </div>
+      <p className="text-sm opacity-60">
+        <Link href="/privacy" className="underline">
+          隱私權政策與資料刪除
+        </Link>
+      </p>
     </main>
   );
 }

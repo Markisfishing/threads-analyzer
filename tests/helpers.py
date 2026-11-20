@@ -60,11 +60,13 @@ class SbUser:
         return user_headers(self.token)
 
 
-def create_user(client: httpx.Client, prefix: str = "test") -> SbUser:
+def create_user(client: httpx.Client, prefix: str = "test", metadata: dict | None = None) -> SbUser:
     email = f"{prefix}-{uuid.uuid4().hex[:10]}@example.com"
     password = secrets.token_urlsafe(24)
-    r = client.post(f"{URL}/auth/v1/admin/users", headers=admin_headers(),
-                    json={"email": email, "password": password, "email_confirm": True})
+    body = {"email": email, "password": password, "email_confirm": True}
+    if metadata:
+        body["user_metadata"] = metadata
+    r = client.post(f"{URL}/auth/v1/admin/users", headers=admin_headers(), json=body)
     r.raise_for_status()
     uid = r.json()["id"]
     r = client.post(f"{URL}/auth/v1/token?grant_type=password", headers={"apikey": ANON_KEY},
