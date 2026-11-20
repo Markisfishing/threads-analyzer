@@ -2,6 +2,8 @@
 
 輸入 Threads 帳號，爬取近期貼文並產出互動表現分析報告：總覽指標、Top 5 貼文、4 張圖表、三群組 NLP 成敗分析、策略建議。另可多帳號比較、匯出 CSV／JSON。
 
+線上網址：https://threads-analyzer-murex.vercel.app
+
 需求、驗收標準與任務拆解見 [docs/PRD.md](docs/PRD.md)；與 AI 協作的紀錄見 [AI_LOG.md](AI_LOG.md)。
 
 ## 架構
@@ -16,6 +18,7 @@
 
 - 前端只用使用者 session 存取資料，所有資料表都有 RLS，使用者只看得到自己的任務。
 - Worker 用 service role key 寫入結果，金鑰只存在 Worker 端（本機 `.env` 或 GitHub Actions Secrets）。
+- 部署：網站在 Vercel（函式區域 hnd1 東京，與 Supabase ap-northeast-1 同區），推送到 main 會自動部署。
 - 任務狀態：`queued → scraping → cleaning → analyzing → completed / partial / failed / cancelled`，前端每 5 秒輪詢進度。
 
 | 目錄 | 內容 |
