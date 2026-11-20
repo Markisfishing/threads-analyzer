@@ -25,7 +25,7 @@
 | `worker/` | Python Worker：`scraper` 爬取、`cleaning` 清理、`metrics` 指標、`nlp` 三群組、`insights` 規則建議、`llm` Groq |
 | `supabase/migrations/` | 資料表、RLS policy、權限 |
 | `tests/` | `worker/` 單元、`integration/` 真實 Supabase、`e2e/` 瀏覽器、`live/` 真實 Threads |
-| `docs/` | PRD 與 T1 可行性調查 |
+| `docs/` | PRD、T1 可行性調查、登入設定指南 |
 | `spike/` | T1 爬取測試腳本、產生登入狀態的腳本 |
 
 ## 安裝
@@ -46,6 +46,8 @@ py -3.12 -m venv .venv
 - `.env`（Worker）：`SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY`，選填 `GROQ_API_KEY`（不填則使用規則模板產生建議）、`THREADS_STORAGE_STATE`。
 
 `SUPABASE_SERVICE_ROLE_KEY` 不可放進 `.env.local` 或任何 `NEXT_PUBLIC_` 變數。
+
+第三方登入（Google、Facebook）與驗證信寄送（Gmail SMTP）在 Supabase 等服務後台設定，步驟見 [docs/auth-setup.md](docs/auth-setup.md)。
 
 ### 建立資料表
 ```powershell
@@ -89,7 +91,7 @@ E2E 與整合測試會在 Supabase 建立臨時使用者，結束後刪除。
 
 | 功能 | 說明 |
 |---|---|
-| 帳號 | Email 註冊／登入；未登入存取 `/dashboard` 會導向登入頁 |
+| 帳號 | Email 註冊（驗證信）／登入，或 Google、Facebook 登入；帳號頁可刪除帳號與所有資料；未登入存取 `/dashboard` 會導向登入頁。後台設定見 [docs/auth-setup.md](docs/auth-setup.md) |
 | 建立分析 | 輸入 username 或個人頁網址，目標 30–100 篇；同帳號進行中不重複建立；24 小時內已完成可選擇用快取或強制重新爬取 |
 | 進度 | 爬取、清理、分析各階段與已取得篇數；排隊過久可重新觸發 |
 | 報告 | 8 個總覽指標、Top 5 貼文、發文時段熱度、類型、長度與互動、關鍵字、三群組比較、至少 3 點觀察與建議、資料限制 |

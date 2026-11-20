@@ -2,7 +2,7 @@
 
 | 項目 | 內容 |
 |---|---|
-| 版本 | v0.4（T1–T14、T17 完成；待部署 T6a、T15） |
+| 版本 | v0.5（T1–T14、T17 完成，T6a 已在 GitHub Actions 實測；待 T15 部署、T22–T23 後台設定） |
 | 日期 | 2026-11-20 |
 | 狀態 | 🟡 待確認 — 確認範圍、優先級、驗收標準後才進入開發 |
 | 來源 | 考題文件「AI Vibe Coding 考題：Threads 帳號貼文爬取與數據分析」 |
@@ -63,12 +63,15 @@
 ### F1 使用者註冊／登入與權限控管（Must）
 - **目的**：只有登入者能建立與查看自己的分析。
 - **觸發**：造訪任何 `/dashboard/*` 頁面，或點「登入」。
-- **輸入**：Email ＋ Password（Supabase Auth）。
+- **輸入**：Email ＋ Password，或 Google／Facebook 第三方登入（皆由 Supabase Auth 處理）。
 - **處理流程**：
   1. 註冊 → Supabase 寄驗證信 → 驗證後可登入。
   2. 登入成功 → 建立 session（cookie）→ 導向 `/dashboard`。
   3. Next.js `proxy.ts`（Next 16 取代 middleware）檢查 session，未登入存取受保護頁 → 302 導向 `/login?next=<原路徑>`。
-  4. 首次登入時以 DB trigger 建立 `profiles` 紀錄。
+  4. 首次登入時以 DB trigger 建立 `profiles` 紀錄；第三方登入帶入名稱（`display_name`）。
+  5. 第三方登入：`/auth/oauth?provider=` 產生 PKCE 驗證碼並導向 Supabase → Google／Facebook 授權 → `/auth/callback` 交換 session。按鈕只顯示 Supabase 後台已啟用的方式。同一 Email 的密碼帳號與第三方帳號由 Supabase 自動合併為同一使用者。
+  6. 驗證信由自訂 SMTP（Gmail 應用程式密碼）寄出，避免 Supabase 內建寄信的頻率與收件人限制。
+  7. 帳號頁可刪除帳號：輸入「刪除」確認後呼叫 `delete_my_account()`（security definer，只能刪自己），連帶刪除所有資料。隱私權政策與資料刪除說明公開於 `/privacy`（Google／Meta 上線要求）。
 - **輸出**：登入狀態、使用者 Email 顯示於右上角、登出按鈕。
 - **使用者可見狀態**：`未登入` / `登入中…` / `登入失敗（訊息）` / `已登入`。
 
@@ -358,6 +361,10 @@ flowchart TD
 - **AC1.3 保護路由**：Given 未登入，When 直接開 `/dashboard/jobs/<id>`，Then 導向 `/login?next=…`，登入後回到原頁。
 - **AC1.4 資料隔離（邊界）**：Given 使用者 A 有任務 X，When 使用者 B 以自己的 session 用 Supabase client 查 `analysis_jobs`、`posts` where `job_id = X`，Then 回傳 0 筆；開 `/dashboard/jobs/X` 顯示 404。
 - **AC1.5 anon**：Given 只有 anon key 無 session，When 查任一表，Then 0 筆。
+- **AC1.6 第三方登入入口**：Given Supabase 只啟用部分登入方式，When 開登入／註冊頁，Then 只顯示已啟用的按鈕；直接開未啟用或未知的 `/auth/oauth?provider=`，Then 回登入頁顯示「此登入方式目前未開放」。
+- **AC1.7 第三方登入成功**：Given 已啟用 Google，When 首次以 Google 登入，Then 建立帳號、`profiles.display_name` 為 Google 名稱、導向 `next` 或 `/dashboard`；Given 同 Email 已用密碼註冊，Then 登入後為同一帳號、原有分析仍在。
+- **AC1.8 取消授權**：Given 在 Google／Facebook 授權頁按取消，Then 回登入頁顯示「已取消第三方登入」。
+- **AC1.9 刪除帳號**：Given 已登入，When 在帳號頁輸入「刪除」並送出，Then 帳號、分析、貼文、結果、日誌全部刪除並登出；確認文字錯誤則不刪除；其他使用者資料不受影響。
 
 ### F2 建立任務
 - **AC2.1**：Given 已登入，When 輸入 `@zuck`、`zuck`、`https://www.threads.com/@zuck` 任一，Then 皆建立 `target_username = zuck` 的 `queued` 任務。
@@ -474,6 +481,8 @@ flowchart TD
 | T18 | 額外圖表（長度散佈、關鍵字） | Should | T11 | 0.5h | 報告共 4 張圖 |
 | T19 | E2E 測試 | Should | T15 | 1h | 登入→建立→看報告 E2E 通過 |
 | T21 | 一鍵啟動（docker compose 本機 Worker） | Could | T6 | 0.5h | `docker compose up` 啟動輪詢 Worker |
+| T22 | Google 登入＋Gmail SMTP 驗證信＋隱私權頁＋刪除帳號 | Should | T4 | 1.5h | AC1.6–1.9；設定步驟見 `docs/auth-setup.md` |
+| T23 | Facebook 登入（Meta 應用程式切 Live 模式） | Could | T22 | 1h | AC1.6–1.8（Facebook） |
 
 **Must 合計約 19h；Should 3.5h；Could 0.5h。**
 
@@ -511,3 +520,4 @@ flowchart TD
 | 2026-11-20 | v0.2 | 依 Q1–Q4 回覆：加入登入 fallback（F3、E12、AC3.6–3.7）；LLM 改為 Groq＋規則 fallback，升為 Must（F12、E13、AC12）；Worker 改由 GitHub Actions 執行（D5、§7.1、T6a、E14）；多帳號比較與匯出改為 Should（D6）；更新環境變數、安全性、風險 R5–R7、拆解表 |
 | 2026-11-20 | v0.3 | T1 spike 完成：未登入 17–28 篇、登入 57–70 篇；F3 改為攔截 JSON、過濾非本人貼文、截斷至 max_posts；Python 改 3.12 |
 | 2026-11-20 | v0.4 | 依實作更新：Next.js 16 以 `proxy.ts` 取代 middleware、關閉 cacheComponents；Worker 移除 pandas／scikit-learn／supabase-py，改用 httpx 與純 Python 統計；情緒分析改內建詞表；T12–T14、T17 完成 |
+| 2026-11-21 | v0.5 | 新增第三方登入（Google、Facebook）、Gmail SMTP 驗證信、`/privacy` 隱私權與資料刪除頁、帳號刪除（AC1.6–1.9、T22–T23）；LLM 預設模型改為 `openai/gpt-oss-120b`（Groq 已下架 llama-3.3-70b-versatile） |
