@@ -17,7 +17,7 @@ import httpx
 log = logging.getLogger("worker.llm")
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 REQUIRED = ("title", "observation", "hypothesis", "action", "validation", "priority", "timeline")
 PRIORITIES = {"P1", "P2", "P3"}
 NUM_RE = re.compile(r"-?\d[\d,]*\.?\d*")
