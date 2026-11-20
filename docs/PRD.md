@@ -2,7 +2,7 @@
 
 | 項目 | 內容 |
 |---|---|
-| 版本 | v0.1（草稿，待出題者確認） |
+| 版本 | v0.2（已回覆 Q1–Q4，待最終確認） |
 | 日期 | 2026-11-20 |
 | 狀態 | 🟡 待確認 — 確認範圍、優先級、驗收標準後才進入開發 |
 | 來源 | 考題文件「AI Vibe Coding 考題：Threads 帳號貼文爬取與數據分析」 |
@@ -15,11 +15,12 @@
 
 | # | 決策 | 結論 | 理由／影響 |
 |---|---|---|---|
-| D1 | 資料來源 | **只用 Playwright 爬取 Threads 公開頁面，不使用 mock data** | 符合考題「請用 playwright 進行爬取」。爬取受阻時任務標記失敗或部分完成，**不以假資料填補**。 |
+| D1 | 資料來源 | **只用 Playwright 爬取 Threads，不使用 mock data**；先以未登入模式爬取，未登入取不到目標篇數時，**改用開發者自己的 Threads 帳號登入狀態**（Playwright `storageState`）續爬 | 符合考題「請用 playwright 進行爬取」。爬取受阻時任務標記失敗或部分完成，**不以假資料填補**。登入狀態只存在 Worker 的 secret，不進版控、不給前端。 |
 | D2 | 三群組分組規則 | **互動分數三分位數**：`score = like + 2 × reply`，以 P33 / P67 切為高／中／低 | 回覆代表較深的互動，權重較高；規則簡單、可解釋、可驗收。 |
-| D3 | 策略建議產生方式 | **先不接 LLM，以規則模板產生建議** | 與考題「LLM 建議」有落差，見 §9 偏離事項；LLM 列為 Could，介面預留。 |
+| D3 | 策略建議產生方式 | **Groq API（LLM）產生策略建議，規則模板作為 fallback** | 符合考題「LLM 建議」。Groq 呼叫失敗、逾時、回傳格式不合時自動退回規則模板，報告標示來源。API key 只放在 Worker。 |
 | D4 | 專案位置 | `D:\project\threads-analyzer` | 獨立 Git repository，即為最終交付 repo。 |
-| D5 | 架構 | **Next.js（Vercel）＋ Supabase ＋ 獨立 Python Worker（Playwright）** | Playwright 需要完整 Chromium、執行時間長，不適合放在 Vercel Serverless Function（大小與逾時限制）。Worker 可本機或 Docker 執行，透過 Supabase 任務表領取工作。 |
+| D5 | 架構 | **Next.js（Vercel）＋ Supabase ＋ GitHub Actions 執行 Python Worker（Playwright）** | Playwright 需要完整 Chromium、執行時間長，不適合放在 Vercel Serverless Function（套件大小與逾時限制）。GitHub Actions 免費、不需自備常駐主機、原生支援 Playwright；Next.js 建立任務後以 `workflow_dispatch` 觸發。同一份 Worker 程式也可本機以輪詢模式執行，供開發與備援。比較見 §7.1。 |
+| D6 | 多帳號比較、CSV/JSON 匯出 | **PRD 中完整定義，實作優先級為 Should** | 考題將其列為加分項目（成果評估），但要求 PRD 必須定義；Must 完成後再做。 |
 
 ---
 
@@ -81,7 +82,8 @@
   1. 前端正規化 → 抽出 username（規則：`^[A-Za-z0-9._]{1,30}$`）。
   2. 檢查重複任務（§5 E7）。
   3. 寫入 `analysis_jobs`，`status = queued`。
-  4. Worker 輪詢領取（`queued → scraping`，以 `UPDATE … WHERE status='queued' RETURNING` 搶鎖避免重複領取）。
+  4. Next.js Route Handler（伺服器端）呼叫 GitHub API `workflow_dispatch`，傳入 `job_id`，觸發 Worker workflow；觸發失敗則任務維持 `queued`，由本機輪詢模式 Worker 或使用者「重新觸發」處理（§5 E9）。
+  5. Worker 以 `UPDATE … SET status='scraping' WHERE id=$1 AND status='queued' RETURNING` 搶鎖，避免重複執行。
 - **輸出**：任務 ID，導向任務詳情頁。
 - **使用者可見狀態**：`排隊中` → `爬取中（已取得 n 篇）` → `分析中` → `完成` / `部分完成` / `失敗`。前端每 5 秒輪詢或用 Supabase Realtime 更新。
 
@@ -94,6 +96,7 @@
   2. 判斷頁面狀態：帳號不存在／私人帳號／正常（§5 E2）。
   3. 擷取帳號資訊：顯示名稱、粉絲數。
   4. **分批捲動**：每次捲動後等待新貼文出現，每批解析一次 DOM；連續 3 次捲動無新貼文即停止。
+  4a. **登入 fallback**：若未登入模式停止時篇數 < `max_posts`，或遇到登入牆，且 Worker 有設定 `THREADS_STORAGE_STATE`，則以登入狀態重開瀏覽器、從頭捲動續爬（已取得的貼文以 `post_id` 去重）。`analysis_jobs.scrape_mode` 記錄 `anonymous` / `authenticated`，報告中顯示。登入狀態失效（被導向登入頁）→ log `warn`，以已取得資料繼續（§5 E12）。
   5. 每篇擷取：貼文 ID／URL、發文時間（`<time datetime>`）、文字內容、like、reply、repost、quote 數。
   6. 每批寫入 `posts`（upsert，以 `(job_id, post_id)` 去重），更新 `scraped_count`。
   7. 每個網路／解析步驟 retry：最多 3 次，指數退避 2s / 4s / 8s。
@@ -101,7 +104,7 @@
 - **輸出**：`posts` 原始資料（含 `raw_json`）、爬取 log（`job_logs`）。
 - **使用者可見狀態**：進度「已取得 n / 目標 N 篇」、目前步驟、錯誤訊息。
 
-> **合法性說明**（README 也要寫）：只讀取未登入狀態下公開可見的資料，不繞過登入、不破解驗證、不大量併發；遵守低頻存取。Meta 服務條款原則上限制自動化蒐集，本專案僅供學術／考題示範用途，不做商業轉售。
+> **合法性說明**（README 也要寫）：只讀取公開帳號的貼文；預設以未登入狀態讀取，必要時使用開發者本人帳號的正常登入狀態（不使用他人帳號、不破解驗證、不繞過私人帳號限制、不大量併發）；遵守低頻存取。使用登入狀態會讓爬取行為與開發者帳號綁定，有被 Threads 限制的風險，README 需提醒。Meta 服務條款原則上限制自動化蒐集，本專案僅供學術／考題示範用途，不做商業轉售。
 
 ### F4 資料清理（Must）
 - **觸發**：爬取結束（≥ 1 篇）後 Worker 自動執行。
@@ -152,6 +155,7 @@
   3. 圖表 ≥ 2 張（Must：發文時段熱度圖、貼文類型平均互動長條圖；Should：文字長度 vs 互動散佈圖、關鍵字長條圖）。
   4. 三群組 NLP 分析區塊。
   5. 內容策略觀察 ≥ 3 點（規則模板產生，每點標示「觀察（數據）」與「推測／建議」，並附驗證方法）。
+  5a. LLM 策略建議（F12，Groq 產生；fallback 時標示「規則模板產生」）。
   6. 資料限制提示：樣本數、缺失欄位、無曝光數、是否部分完成。
 
 ### F8 查看、重跑與刪除任務（Must）
@@ -159,12 +163,12 @@
 - **重跑**：在完成／失敗任務點「重跑」→ 建立新 job（`parent_job_id` 指向原任務），保留舊結果供對照。
 - **刪除**：二次確認後刪除任務，連帶刪除 posts / results / logs（`ON DELETE CASCADE`）。進行中任務需先取消（`status = cancelled`，Worker 每批檢查並中止）。
 
-### F9 多帳號比較（Must，考題明列）
+### F9 多帳號比較（Should，加分項目）
 - **輸入**：勾選 2–4 個自己已完成的任務。
 - **輸出**：並排比較表（平均互動、互動率、發文頻率、類型分布）＋ 1 張分組長條圖。
 - **規則**：只能選自己的任務；同帳號多次任務以使用者勾選為準。
 
-### F10 匯出 CSV / JSON（Must，考題明列）
+### F10 匯出 CSV / JSON（Should，加分項目）
 - 任務頁提供「下載貼文 CSV」「下載完整 JSON（貼文＋分析結果）」。
 - CSV 為 UTF-8 with BOM（Excel 開啟中文不亂碼）。
 - 透過 Next.js Route Handler 以使用者 session 查詢，受 RLS 保護。
@@ -172,8 +176,18 @@
 ### F11 快取（Should）
 - 同一使用者、同一 username，24 小時內已有 `completed` 任務 → 提示「使用快取結果」或「強制重新爬取」。
 
-### F12 LLM 策略建議（Could，D3 延後）
-- 預留 `StrategyGenerator` 介面，目前實作為 `RuleBasedGenerator`；之後可加 `LLMGenerator`，輸入為 `summary + groups` JSON。
+### F12 LLM 策略建議（Must，Groq API）
+- **目的**：把分析數據轉成具體、可執行的內容策略建議。
+- **觸發**：F6 完成後由 Worker 執行。
+- **輸入**：`summary`、`top_posts`（只送文字前 200 字與數字）、`groups` 的 JSON；不送使用者個資。
+- **處理流程**：
+  1. `StrategyGenerator` 介面，兩個實作：`GroqGenerator`（主要）、`RuleBasedGenerator`（fallback）。
+  2. 呼叫 Groq Chat Completions（OpenAI 相容端點），模型由 `GROQ_MODEL` 設定，`temperature = 0.3`，要求 JSON 輸出。
+  3. 提示詞要求：每條建議必須引用報告中實際出現的數字作為依據，區分「觀察」與「推測」，附驗證方法、優先級（P1–P3）與建議執行時程。
+  4. 驗證回傳：JSON schema 檢查（3–5 條，每條含 `observation / hypothesis / action / validation / priority / timeline`）；檢查引用數字是否存在於 `summary`（防幻覺），不合格的條目捨棄。
+  5. 逾時 20 秒、HTTP 429/5xx retry 2 次；仍失敗或合格條目 < 3 → 改用 `RuleBasedGenerator`。
+- **輸出**：`analysis_results.insights`，`generator` 記錄 `groq:<model>` 或 `rule_based_v1`。
+- **使用者可見狀態**：建議區塊標示來源（「AI 產生（Groq）」或「規則模板產生」）與免責說明「AI 建議僅供參考，請以驗證方法確認」。
 
 ---
 
@@ -239,6 +253,8 @@ flowchart TD
 | attempt | int | ✔ | 已重試次數 |
 | parent_job_id | uuid FK → analysis_jobs.id | | 重跑來源 |
 | account_meta | jsonb | | 顯示名稱、粉絲數 |
+| scrape_mode | text | | `anonymous / authenticated` |
+| run_url | text | | GitHub Actions 執行頁網址（除錯用，僅自己可見） |
 | created_at / started_at / finished_at | timestamptz | | |
 
 索引：`(user_id, created_at desc)`；部分唯一索引 `(user_id, target_username) WHERE status IN ('queued','scraping','cleaning','analyzing')` 防重複進行中任務。
@@ -274,7 +290,7 @@ flowchart TD
 | top_posts | jsonb | ✔ | |
 | groups | jsonb | | 三群組 NLP；樣本不足為 NULL |
 | insights | jsonb | ✔ | 觀察／推測／建議／驗證方法／優先級 |
-| generator | text | ✔ | `rule_based_v1` |
+| generator | text | ✔ | `groq:<model>` 或 `rule_based_v1` |
 | created_at | timestamptz | ✔ | |
 
 **job_logs**（爬取／分析日誌）
@@ -325,9 +341,12 @@ flowchart TD
 | E6 | 逾時 | 單頁載入 > 30s、整體任務 > 10 分鐘 | 「抓取逾時，已保存 n 篇」 | 單頁 retry 3 次；整體逾時 → 有資料為 `partial`，無資料為 `failed`，`TIMEOUT` |
 | E7 | 重複任務 | 部分唯一索引衝突 | 「@xxx 已在分析中，前往查看」 | 不建新任務，導向進行中任務 |
 | E8 | 分析失敗 | Python 例外 | 「分析失敗，原始貼文已保存，可重跑分析」 | `failed`，`ANALYSIS_ERROR`，貼文保留；錯誤 stack 寫 log |
-| E9 | Worker 未執行 | job `queued` 超過 5 分鐘 | 「分析服務忙碌或離線，任務仍在排隊」 | UI 提示；不自動失敗 |
+| E9 | Worker 未執行 | `workflow_dispatch` 呼叫失敗，或 job `queued` 超過 5 分鐘 | 「分析服務忙碌或離線，任務仍在排隊」＋「重新觸發」按鈕 | UI 提示；不自動失敗；重新觸發限每 1 分鐘 1 次 |
 | E10 | Worker 中途當掉 | `scraping` 且 `started_at` > 15 分鐘無更新 | — | Worker 啟動時把殭屍任務重設為 `queued`（attempt+1，上限 3） |
 | E11 | 粉絲數取不到 | 解析失敗 | 「無法取得粉絲數，互動率改以總互動排序」 | `engagement_rate` NULL，Top 5 改用 engagement |
+| E12 | 登入狀態失效 | 使用 `storageState` 後仍被導向登入頁 | 報告顯示「登入狀態失效，僅以未登入資料分析」 | log `warn`；以已取得資料繼續（可能為 `partial`）；README 說明如何重新產生登入狀態 |
+| E13 | Groq API 失敗 | 逾時、429、5xx、JSON 不合格、合格條目 < 3 | 建議區塊標示「規則模板產生」 | retry 2 次 → fallback `RuleBasedGenerator`；任務仍為 `completed` |
+| E14 | GitHub Actions 執行失敗 | workflow 結束但 job 未到終態 | 「分析服務執行失敗，可重跑」 | workflow 最後一步（`if: failure()`）將 job 設為 `failed`、`WORKER_CRASHED` |
 
 ---
 
@@ -351,6 +370,9 @@ flowchart TD
 - **AC3.3 不存在帳號**：Given 隨機不存在 username，Then `failed`、`ACCOUNT_NOT_FOUND`，且無 retry log。
 - **AC3.4 受阻**：Given 模擬 429 / 登入牆（測試 fixture），Then log 有 3 次 retry 紀錄，最終 `failed` 或 `partial`，`posts` 不含任何非爬取來源的資料。
 - **AC3.5 log**：每個任務 `job_logs` 至少有開始、每批篇數、結束三類紀錄。
+- **AC3.6 登入 fallback**：Given 未登入模式只取得 < 30 篇且已設定 `THREADS_STORAGE_STATE`，Then 自動以登入模式續爬，`scrape_mode = authenticated`，貼文無重複。
+- **AC3.7 未設定登入狀態**：Given 未設定 `THREADS_STORAGE_STATE` 且未登入只取得 12 篇，Then `partial`、log 記錄「未設定登入狀態，略過 fallback」。
+- **AC3.8 觸發**：Given 建立任務，Then 60 秒內 GitHub Actions 出現對應 run，`run_url` 寫入任務。
 
 ### F4 清理
 - **AC4.1**：Given `1.2萬`、`3,456`、`987`，Then 解析為 12000、3456、987。
@@ -369,6 +391,12 @@ flowchart TD
 ### F7 報告
 - **AC7.1**：完成的任務頁包含：總覽卡片、Top posts 表格、≥ 2 張圖表、≥ 3 點觀察、資料限制提示。
 - **AC7.2**：每點觀察包含「數據依據」「推測」「建議」「驗證方法」四欄位，且數據依據中的數字可在報告其他區塊找到。
+
+### F12 LLM 策略建議
+- **AC12.1 成功**：Given 有效 `GROQ_API_KEY`，Then 顯示 3–5 條建議，每條有觀察、推測、行動、驗證方法、優先級、時程，`generator = groq:<model>`。
+- **AC12.2 fallback**：Given `GROQ_API_KEY` 無效或 mock 回傳 500（單元測試），Then 顯示規則模板建議並標示來源，任務為 `completed`。
+- **AC12.3 防幻覺**：Given LLM 回傳引用不存在數字的條目（單元測試 fixture），Then 該條被捨棄。
+- **AC12.4 安全**：前端 bundle 與瀏覽器網路請求中找不到 `GROQ_API_KEY`。
 
 ### F8 查看／重跑／刪除
 - **AC8.1**：任務列表只顯示自己的任務，依建立時間新到舊。
@@ -390,20 +418,30 @@ flowchart TD
 
 | 類別 | 要求 |
 |---|---|
-| 安全性 | 全表 RLS；`SUPABASE_SERVICE_ROLE_KEY` 僅 Worker 使用；`.env*` 不進版控；輸入正規化防注入；匯出 API 驗 session。 |
+| 安全性 | 全表 RLS；`SUPABASE_SERVICE_ROLE_KEY`、`GROQ_API_KEY`、`THREADS_STORAGE_STATE` 僅存在 Worker（GitHub Actions Secrets／本機 `.env`）；`GITHUB_DISPATCH_TOKEN` 僅存在 Vercel 伺服器端環境變數（fine-grained token，只有該 repo 的 Actions 寫入權限）；`.env*`、`storage_state.json` 列入 `.gitignore`；輸入正規化防注入；匯出 API 驗 session。 |
 | 效能 | 30 篇任務端到端 ≤ 5 分鐘（P90）；Dashboard 首屏 ≤ 2 秒（Vercel）；報告頁直接讀 `analysis_results`，不即時重算。 |
 | 可用性 | 所有狀態有中文訊息；RWD 支援手機寬度 375px；圖表有標題、軸標籤與資料來源說明。 |
 | 合規 | 只爬公開頁面、低頻（每動作 1.5–3s 延遲、單 Worker 同時 1 個任務）；README 說明 ToS 風險與用途限制；不儲存爬取用帳密。 |
 | 快取 | 24h 同帳號結果重用（F11）。 |
 | 日誌 | Worker 結構化 log 寫 stdout 與 `job_logs`；含 job_id、step、耗時、篇數。 |
 | 測試 | Python：解析器（HTML fixture）、清理、指標、分組單元測試（pytest）；Web：RLS 隔離測試腳本；E2E 至少 1 條「登入→建立→看報告」（Playwright Test）。 |
-| 部署 | Web 部署 Vercel；Worker 以 Docker 本機或 VM 執行；Supabase migrations 放 `supabase/migrations/`。 |
-| 環境變數 | Web：`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`。Worker：`SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY`、`SCRAPE_MAX_POSTS`（預設 30）、`SCRAPE_DELAY_MS_MIN/MAX`、`SCRAPE_TIMEOUT_SEC`（600）、`SCRAPE_MAX_RETRIES`（3）、`WORKER_POLL_INTERVAL_SEC`（5）、`HEADLESS`（true）。全部列於 `.env.example`。 |
+| 部署 | Web 部署 Vercel；Worker 以 GitHub Actions workflow（`.github/workflows/worker.yml`，`workflow_dispatch` 觸發）執行，亦可本機 `python -m worker poll` 輪詢執行；Supabase migrations 放 `supabase/migrations/`。 |
+| 環境變數 | **Web（Vercel）**：`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`GITHUB_DISPATCH_TOKEN`、`GITHUB_REPO`（`owner/name`）、`GITHUB_WORKFLOW_FILE`（`worker.yml`）。**Worker（GitHub Secrets／本機 .env）**：`SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY`、`GROQ_API_KEY`、`GROQ_MODEL`（預設使用開發當下 Groq 提供的 Llama 70B 級模型，實作時以 Groq 模型列表確認）、`LLM_TIMEOUT_SEC`（20）、`THREADS_STORAGE_STATE`（選填，登入狀態 JSON 的 base64）、`SCRAPE_MAX_POSTS`（30）、`SCRAPE_DELAY_MS_MIN/MAX`（1500/3000）、`SCRAPE_TIMEOUT_SEC`（600）、`SCRAPE_MAX_RETRIES`（3）、`WORKER_POLL_INTERVAL_SEC`（5，僅本機模式）、`HEADLESS`（true）。全部列於 `.env.example`。 |
+
+### 7.1 Worker 執行位置比較（D5）
+| 方案 | 優點 | 缺點 | 結論 |
+|---|---|---|---|
+| Vercel Function 直接跑 Playwright | 單一平台 | Chromium 套件過大、逾時限制，30 篇捲動容易超時 | ✘ |
+| **GitHub Actions（workflow_dispatch）** | 免費、免維運、內建 Playwright 支援、每次乾淨環境、執行 log 可查 | 冷啟動約 30–60 秒；每任務需安裝瀏覽器（以快取縮短）；repo 需放 GitHub | ✔ 採用 |
+| 本機／Docker 輪詢 Worker | 啟動快、方便除錯 | 需電腦常開，評審無法自行使用 | 作為開發與備援模式 |
+| Railway / Render / Fly.io 常駐 | 啟動快 | 需另開帳號、可能收費 | 不採用 |
+| Vercel Sandbox | 留在 Vercel 生態 | 計費、較新，資料少 | 不採用，列為未來選項 |
 
 ### 技術選型
 - Web：Next.js（App Router）＋ TypeScript ＋ Tailwind ＋ `@supabase/ssr` ＋ Recharts。
-- Worker：Python 3.11 ＋ Playwright ＋ pandas ＋ jieba ＋ scikit-learn（TF-IDF）＋ supabase-py。
+- Worker：Python 3.11 ＋ Playwright ＋ pandas ＋ jieba ＋ scikit-learn（TF-IDF）＋ supabase-py ＋ Groq（OpenAI 相容 SDK）。
 - DB / Auth：Supabase（Postgres ＋ Auth ＋ RLS）。
+- Worker 執行環境：GitHub Actions（ubuntu-latest）。
 
 ---
 
@@ -414,29 +452,30 @@ flowchart TD
 | # | 任務 | 優先 | 依賴 | 預估 | 完成定義（DoD） |
 |---|---|---|---|---|---|
 | T0 | PRD 確認 | Must | — | 0.5h | 出題者確認範圍、優先級、驗收標準 |
-| T1 | **Playwright 爬取可行性 spike**：手動腳本對 3 個公開帳號測試未登入可取得篇數與欄位 | Must | T0 | 1h | 記錄實際可取得篇數、選擇器、是否有登入牆；**若 < 30 篇則回到 PRD 調整（見 §9 風險 R1）** |
+| T1 | **Playwright 爬取可行性 spike**：手動腳本對 3 個公開帳號測試未登入／登入兩種模式可取得篇數與欄位，並產生 `storageState` | Must | T0 | 1h | 記錄兩種模式實際篇數、選擇器、登入牆出現時機；登入模式 ≥ 30 篇；**若仍 < 30 篇則回到 PRD 調整（R1）** |
 | T2 | 專案骨架：Next.js、Python worker、`.env.example`、README 骨架 | Must | T0 | 0.5h | `npm run dev` 與 `python -m worker --help` 可執行 |
 | T3 | Supabase schema ＋ RLS migrations ＋ profiles trigger | Must | T2 | 1h | migration 可套用；AC1.4、AC1.5 隔離測試通過 |
 | T4 | 登入／註冊／middleware 保護 | Must | T3 | 1h | AC1.1–1.3 |
 | T5 | 建立任務表單＋任務列表＋狀態輪詢 | Must | T4 | 1h | AC2.1–2.3、AC8.1 |
-| T6 | Worker 輪詢領取＋狀態機＋job_logs | Must | T3 | 1h | 手動插入 job 可被領取並更新狀態；E10 殭屍任務處理 |
-| T7 | Playwright 爬蟲（分批捲動、retry、去重 upsert） | Must | T1,T6 | 2h | AC3.1–3.5 |
+| T6 | Worker 狀態機＋job_logs（`run --job-id` 與 `poll` 兩種入口） | Must | T3 | 1h | 手動插入 job 可被執行並更新狀態；E10 殭屍任務處理 |
+| T6a | GitHub Actions workflow＋Next.js `workflow_dispatch` 觸發 | Must | T5,T6 | 1h | AC3.8；E9、E14 |
+| T7 | Playwright 爬蟲（分批捲動、retry、去重 upsert、登入 fallback） | Must | T1,T6 | 2h | AC3.1–3.7 |
 | T8 | 清理模組＋單元測試 | Must | T7 | 1h | AC4.1–4.5 pytest 通過 |
 | T9 | 指標分析＋單元測試 | Must | T8 | 1h | AC5.1–5.2 |
 | T10 | 三群組 NLP＋規則模板洞察 | Must | T9 | 1.5h | AC6.1–6.3、AC7.2 |
-| T11 | 報告頁（卡片、Top 表、2 張 Must 圖、群組、觀察、限制提示） | Must | T5,T10 | 1.5h | AC7.1 |
+| T10a | Groq 策略建議（schema 驗證、防幻覺、fallback） | Must | T10 | 1h | AC12.1–12.4 |
+| T11 | 報告頁（卡片、Top 表、2 張 Must 圖、群組、觀察、LLM 建議、限制提示） | Must | T5,T10a | 1.5h | AC7.1 |
 | T12 | 重跑／取消／刪除 | Must | T11 | 0.5h | AC8.2–8.4 |
-| T13 | CSV / JSON 匯出 | Must | T11 | 0.5h | AC10.1–10.3 |
-| T14 | 多帳號比較 | Must | T11 | 1h | AC9.1 |
-| T15 | Vercel 部署＋Worker Dockerfile | Must | T11 | 1h | 線上網址可登入並看到 Worker 產生的報告 |
+| T15 | Vercel 部署＋GitHub Secrets 設定＋線上走通 | Must | T6a,T11 | 1h | 線上網址可登入、建立任務，並看到 Actions 產生的報告 |
 | T16 | README（安裝、執行、合法性、指標定義、限制）＋AI_LOG.md | Must | 全部 | 1h | 交付清單齊全 |
+| T13 | CSV / JSON 匯出 | Should | T11 | 0.5h | AC10.1–10.3 |
+| T14 | 多帳號比較 | Should | T11 | 1h | AC9.1 |
 | T17 | 24h 快取 | Should | T5 | 0.5h | 第二次建立同帳號出現快取選項 |
 | T18 | 額外圖表（長度散佈、關鍵字） | Should | T11 | 0.5h | 報告共 4 張圖 |
 | T19 | E2E 測試 | Should | T15 | 1h | 登入→建立→看報告 E2E 通過 |
-| T20 | LLM 策略建議 | Could | T10 | 1h | `LLMGenerator` 可切換，失敗時退回規則模板 |
-| T21 | 一鍵啟動（docker compose） | Could | T15 | 0.5h | `docker compose up` 啟動 Worker |
+| T21 | 一鍵啟動（docker compose 本機 Worker） | Could | T6 | 0.5h | `docker compose up` 啟動輪詢 Worker |
 
-**Must 合計約 17.5h；Should 2h；Could 1.5h。**
+**Must 合計約 19h；Should 3.5h；Could 0.5h。**
 
 ---
 
@@ -445,20 +484,23 @@ flowchart TD
 ### 風險
 | # | 風險 | 影響 | 對策 |
 |---|---|---|---|
-| R1 | Threads 未登入僅顯示少量貼文、捲動後出現登入牆，**可能無法取得 30 篇** | 階段 1 基本要求不達標，且已決定不用 mock | T1 spike 先驗證。若不足：(a) 以使用者自己的 Threads 帳號登入狀態（Playwright `storageState`，僅本機、不進版控）爬取；或 (b) 接受 `partial` 並在 README 說明。**需出題者決定是否接受 (a)** |
+| R1 | Threads 未登入僅顯示少量貼文、捲動後出現登入牆，**可能無法取得 30 篇** | 階段 1 基本要求不達標，且已決定不用 mock | 已確認：未登入不足時改用開發者本人帳號的 `storageState` 續爬（F3 4a）；T1 spike 驗證兩種模式篇數 |
+| R5 | 使用本人帳號爬取可能被 Threads 限制或要求重新驗證 | 登入 fallback 失效、帳號受影響 | 低頻延遲、單一任務序列執行、只在不足時才啟用；E12 處理失效 |
+| R6 | GitHub Actions 冷啟動與安裝 Chromium 拖慢任務 | 端到端時間變長 | 快取 pip 與 Playwright 瀏覽器；效能目標仍為 P90 ≤ 5 分鐘 |
+| R7 | Groq 模型下架或改名、免費額度限制 | LLM 建議失敗 | 模型名稱用環境變數；fallback 規則模板（E13） |
 | R2 | Threads DOM 改版導致選擇器失效 | 爬取全部失敗 | 選擇器集中於單一設定檔；HTML fixture 測試；`PARSER_BROKEN` 明確錯誤 |
 | R3 | 曝光數不可得 | 無法用曝光計算互動率 | 改用粉絲數為分母並在報告與 README 說明 |
 | R4 | Meta 服務條款限制自動化蒐集 | 合規疑慮 | 僅公開資料、低頻、學術用途聲明 |
 
 ### 與考題要求的偏離
-1. **LLM 建議**：考題要求「顯示 … LLM 建議」，本版以規則模板取代（D3），LLM 列為 Could（T20）。需出題者確認可接受。
-2. **曝光數**：考題要求欄位含曝光數，本版欄位保留但值為 NULL（R3）。
+1. **曝光數**：考題要求欄位含曝光數，本版欄位保留但值為 NULL（R3）。
+2. **Worker 執行位置**：爬取與分析不在 Vercel 上執行，改由 GitHub Actions 執行（D5、§7.1）；網站本身仍部署於 Vercel。
 
-### 待出題者確認
-- [ ] Q1：R1 若未登入取不到 30 篇，是否允許用自己的 Threads 帳號登入狀態爬取？
-- [ ] Q2：LLM 建議延後為 Could 是否可接受？
-- [ ] Q3：Worker 不部署在 Vercel（本機／Docker 執行）是否可接受？
-- [ ] Q4：多帳號比較、CSV/JSON 匯出列為 Must 是否符合預期？
+### 已確認事項
+- [x] Q1：未登入取不到 30 篇時，允許用本人 Threads 帳號登入狀態爬取 → D1、F3 4a。
+- [x] Q2：接 Groq API 產生 LLM 建議，規則模板作 fallback → D3、F12。
+- [x] Q3：有更好的做法即可 → 採 GitHub Actions（D5、§7.1）。
+- [x] Q4：多帳號比較、CSV/JSON 匯出為加分項目 → PRD 完整定義，優先級 Should（D6）。
 
 ---
 
@@ -466,3 +508,4 @@ flowchart TD
 | 日期 | 版本 | 變更 |
 |---|---|---|
 | 2026-11-20 | v0.1 | 初稿：依考題與決策 D1–D5 建立 |
+| 2026-11-20 | v0.2 | 依 Q1–Q4 回覆：加入登入 fallback（F3、E12、AC3.6–3.7）；LLM 改為 Groq＋規則 fallback，升為 Must（F12、E13、AC12）；Worker 改由 GitHub Actions 執行（D5、§7.1、T6a、E14）；多帳號比較與匯出改為 Should（D6）；更新環境變數、安全性、風險 R5–R7、拆解表 |
