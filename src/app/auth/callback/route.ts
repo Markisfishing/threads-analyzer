@@ -1,12 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { safeNext } from "@/lib/auth";
+import { oauthErrorCode } from "@/lib/oauth";
 import { createClient } from "@/lib/supabase/server";
 
-/** 信箱驗證連結回呼：支援 PKCE code 與 token_hash 兩種格式。 */
+/** 回呼：信箱驗證連結（PKCE code／token_hash）與第三方登入（PKCE code）。 */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const next = safeNext(searchParams.get("next"));
+  // 第三方登入被取消或失敗時，Supabase 帶 error 參數回來
+  const oauthError = searchParams.get("error");
+  if (oauthError) return NextResponse.redirect(`${origin}/login?error=${oauthErrorCode(oauthError)}`);
+
   const supabase = await createClient();
 
   const code = searchParams.get("code");

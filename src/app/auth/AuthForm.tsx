@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { OAUTH_PROVIDERS, type OAuthProvider } from "@/lib/oauth";
 import type { AuthState } from "./actions";
 
 type Props = {
@@ -9,15 +10,44 @@ type Props = {
   action: (state: AuthState, formData: FormData) => Promise<AuthState>;
   next?: string;
   initialError?: string;
+  /** 一般提示（例如帳號已刪除），非錯誤 */
+  notice?: string;
+  /** Supabase 已啟用的第三方登入 */
+  providers?: OAuthProvider[];
 };
 
-export function AuthForm({ mode, action, next, initialError }: Props) {
+export function AuthForm({ mode, action, next, initialError, notice, providers = [] }: Props) {
   const [state, formAction, pending] = useActionState(action, { error: initialError });
   const isLogin = mode === "login";
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-4 py-16">
       <h1 className="text-2xl font-semibold">{isLogin ? "登入" : "註冊"}</h1>
+
+      {notice && !state.message && (
+        <p role="status" className="rounded-lg border border-foreground/20 p-3 text-sm">
+          {notice}
+        </p>
+      )}
+
+      {providers.length > 0 && !state.message && (
+        <div className="flex flex-col gap-3" data-testid="oauth-providers">
+          {OAUTH_PROVIDERS.filter((p) => providers.includes(p.id)).map((p) => (
+            <a
+              key={p.id}
+              href={`/auth/oauth?provider=${p.id}${next ? `&next=${encodeURIComponent(next)}` : ""}`}
+              className="flex h-10 items-center justify-center rounded-full border border-foreground/30 text-sm font-medium hover:bg-foreground/5"
+            >
+              {p.label}
+            </a>
+          ))}
+          <div className="flex items-center gap-3 text-xs opacity-60" aria-hidden>
+            <span className="h-px flex-1 bg-foreground/20" />
+            或使用 Email
+            <span className="h-px flex-1 bg-foreground/20" />
+          </div>
+        </div>
+      )}
 
       {state.message ? (
         <p role="status" className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm">
@@ -73,6 +103,13 @@ export function AuthForm({ mode, action, next, initialError }: Props) {
             已有帳號？<Link href="/login" className="underline">登入</Link>
           </>
         )}
+      </p>
+      <p className="text-xs opacity-60">
+        {isLogin ? "登入" : "註冊"}即表示你同意本站的
+        <Link href="/privacy" className="underline">
+          隱私權政策
+        </Link>
+        。
       </p>
     </main>
   );
