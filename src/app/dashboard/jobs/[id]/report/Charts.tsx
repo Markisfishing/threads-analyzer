@@ -15,8 +15,8 @@ import {
 } from "recharts";
 import { fmt, type Summary } from "@/lib/report";
 
-const AXIS = { stroke: "var(--chart-axis)", tick: { fill: "var(--chart-muted)", fontSize: 12 } };
-const TOOLTIP_STYLE = {
+export const AXIS = { stroke: "var(--chart-axis)", tick: { fill: "var(--chart-muted)", fontSize: 12 } };
+export const TOOLTIP_STYLE = {
   background: "var(--chart-surface)",
   border: "1px solid var(--chart-grid)",
   borderRadius: 8,
@@ -60,7 +60,7 @@ export function ChartCard({
   );
 }
 
-function SimpleTable({ head, rows }: { head: string[]; rows: (string | number)[][] }) {
+export function SimpleTable({ head, rows }: { head: string[]; rows: (string | number)[][] }) {
   return (
     <table className="w-full text-left">
       <thead className="text-[var(--chart-muted)]">
