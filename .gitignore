@@ -29,3 +29,7 @@ spike/out/
 next-env.d.ts
 *.pem
 npm-debug.log*
+
+# 測試暫存
+.pytest_tmp/
+.pytest_cache/
