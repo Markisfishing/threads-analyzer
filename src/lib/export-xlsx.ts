@@ -52,6 +52,10 @@ const PRIORITY_FILL: Record<string, string> = { P1: "FFFDE2DD", P2: "FFFFF1D6", 
 const NUM = "#,##0";
 const DEC = "#,##0.0";
 const PCT = "0.00%";
+/** 與網站用詞一致；分母是爬取當下的粉絲數，不是曝光數。 */
+export const RATE_LABEL = "粉絲基準互動率（互動 ÷ 爬取當下粉絲數）";
+const RATE_NOTE =
+  "註：曝光數無法取得，這不是曝光互動率；粉絲數為爬取當下的數字，較舊貼文的互動率可能偏低。";
 const DATETIME = "yyyy-mm-dd hh:mm";
 
 /** Excel 沒有時區：把 UTC 時間平移 8 小時，讓儲存格直接顯示台北時間。 */
@@ -105,7 +109,7 @@ const statRow = (label: string, s: Stat | undefined, fmt: string, scale = 1) => 
 
 function overviewSheet(wb: ExcelJS.Workbook, job: XlsxJob, result: XlsxResult | null) {
   const ws = wb.addWorksheet("總覽", { views: [{ showGridLines: false }] });
-  ws.columns = [{ width: 32 }, { width: 18 }, { width: 18 }, { width: 14 }, { width: 14 }, { width: 16 }];
+  ws.columns = [{ width: 44 }, { width: 18 }, { width: 18 }, { width: 12 }, { width: 12 }, { width: 18 }];
   const ov = result?.summary.overview;
   const exported = toTaipeiDate(new Date().toISOString());
   title(ws, `@${job.target_username} 貼文互動分析`, "時間皆為台北時間（UTC+8）");
@@ -140,7 +144,7 @@ function overviewSheet(wb: ExcelJS.Workbook, job: XlsxJob, result: XlsxResult | 
     statRow("引用", ov.quotes, DEC),
     statRow("總互動", ov.engagement, DEC),
     statRow("總互動（排除異常值）", ov.engagement_excl_outliers, DEC),
-    statRow("粉絲基準互動率（÷ 爬取時粉絲數）", ov.engagement_rate_pct, PCT, 0.01),
+    statRow(RATE_LABEL, ov.engagement_rate_pct, PCT, 0.01),
   ];
   stats.forEach((s, i) => {
     const r = ws.addRow([s.label, s.mean ?? "—", s.median ?? "—"]);
@@ -148,9 +152,16 @@ function overviewSheet(wb: ExcelJS.Workbook, job: XlsxJob, result: XlsxResult | 
     r.getCell(3).numFmt = s.fmt;
     styleBody(r, i % 2 === 1);
   });
+  const note = ws.addRow([RATE_NOTE]);
+  ws.mergeCells(note.number, 1, note.number, 6);
+  note.getCell(1).font = { name: FONT, size: 9, color: { argb: MUTED } };
+  note.getCell(1).alignment = { wrapText: true, vertical: "top" };
+  note.height = 28;
 
   section(ws, `Top ${result.top_posts.items.length} 貼文（${result.top_posts.sort_by === "engagement_rate" ? "依粉絲基準互動率" : "依總互動"}）`);
-  styleHeader(ws.addRow(["內容", "發文時間", "按讚", "留言", "總互動", "粉絲基準互動率"]));
+  const topHeader = ws.addRow(["內容", "發文時間", "按讚", "留言", "總互動", RATE_LABEL]);
+  styleHeader(topHeader);
+  topHeader.height = 48;
   result.top_posts.items.forEach((p, i) => {
     const r = ws.addRow([
       p.post_url ? { text: oneLine(p.text, 40), hyperlink: p.post_url } : oneLine(p.text, 40),
@@ -194,7 +205,7 @@ const POST_COLUMNS: { header: string; width: number }[] = [
   { header: "轉發", width: 9 },
   { header: "引用", width: 9 },
   { header: "總互動", width: 10 },
-  { header: "粉絲基準\n互動率", width: 12 },
+  { header: RATE_LABEL, width: 18 },
   { header: "互動分組", width: 10 },
   { header: "貼文類型", width: 16 },
   { header: "字數", width: 7 },
@@ -209,7 +220,7 @@ function postsSheet(wb: ExcelJS.Workbook, posts: XlsxPost[]) {
   ws.columns = POST_COLUMNS.map((c) => ({ width: c.width }));
   const header = ws.addRow(POST_COLUMNS.map((c) => c.header));
   styleHeader(header);
-  header.height = 32;
+  header.height = 48; // 粉絲基準互動率欄名較長，需三行
 
   posts.forEach((p, i) => {
     const group = p.group_label ? GROUP_LABEL[p.group_label] : undefined;

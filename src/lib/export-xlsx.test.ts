@@ -53,6 +53,7 @@ describe("buildWorkbook", () => {
     expect(row.getCell(2).value).toBe("=HYPERLINK(1)"); // 以文字存放，不會被當成公式
     expect(row.getCell(3).numFmt).toBe("#,##0");
     expect(row.getCell(8).numFmt).toBe("0.00%");
+    expect(posts.getRow(1).getCell(8).value).toBe("粉絲基準互動率（互動 ÷ 爬取當下粉絲數）");
     expect(row.getCell(9).value).toBe("高互動");
     expect(row.getCell(10).value).toBe("純文字、含連結");
     expect(row.getCell(14).value).toBe("是");
