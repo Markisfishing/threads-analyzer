@@ -101,12 +101,15 @@ def rule_questions(summary: dict, groups: dict, top: dict) -> Insight | None:
     h, l = hi.get("question_ratio", 0), lo.get("question_ratio", 0)
     if h - l < 0.2:
         return None
+    # 建議篇數不超過實際發文頻率（每週 1 篇的帳號不該被要求每週 3 篇提問）
+    ppw = summary["overview"].get("posts_per_week")
+    per_week = 3 if not ppw else max(1, min(3, int(ppw)))
     return {
         "title": "以提問結尾的貼文更容易引發回覆",
         "observation": f"高互動代表貼文的提問比例 {h:.0%}，低互動代表貼文為 {l:.0%}；"
                        f"高互動組平均回覆 {_fmt(hi.get('avg_replies'))}，低互動組 {_fmt(lo.get('avg_replies'))}。",
         "hypothesis": "提問降低回覆門檻，讓讀者有明確的回應方向。",
-        "action": "每週至少 3 篇貼文以開放式問題結尾。",
+        "action": f"每週至少 {per_week} 篇貼文以開放式問題結尾。",
         "validation": "比較有提問與無提問貼文的平均回覆數，持續 3 週。",
         "priority": "P1",
         "timeline": "3 週",

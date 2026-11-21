@@ -325,3 +325,39 @@ def test_validator_allows_slot_labels_and_approximate_ratio(payload):
     assert len(validate([bins], payload)) == 1
     far = {**item, "observation": item["observation"].replace(f"{approx} 倍", f"{round(approx * 1.3, 1)} 倍")}
     assert validate([far], payload) == []
+
+
+# ------------------------------------------------------------------ 驗證器：前後一致性
+
+def _weekday_item(payload, text_day: str):
+    i = next(i for i, w in enumerate(payload["weekday"]) if w["count"] and w["avg_engagement"] is not None)
+    w = payload["weekday"][i]
+    return _item(f"{text_day}平均互動 {w['avg_engagement']}",
+                 [{"path": f"weekday.{i}.avg_engagement", "value": w["avg_engagement"]}]), w["label"]
+
+
+def test_validator_rejects_contradicting_weekdays(payload):
+    """「最佳發文週日（週六）」：文字提到的星期必須是 evidence 那筆資料的星期。"""
+    ok, label = _weekday_item(payload, "")
+    ok["observation"] = f"{label}{ok['observation']}"
+    assert len(validate([ok], payload)) == 1
+    other = next(w["label"] for w in payload["weekday"] if w["label"] != label)
+    bad = {**ok, "title": f"最佳發文{label}（{other}）"}
+    assert validate([bad], payload) == []
+    no_evidence = _item(f"週三平均按讚 {payload['overview']['likes']['mean']}",
+                        [{"path": "overview.likes.mean", "value": payload["overview"]["likes"]["mean"]}])
+    assert validate([no_evidence], payload) == []
+
+
+def test_validator_rejects_post_counts_beyond_posting_frequency(payload):
+    """每週只發幾篇，卻要求「下週 30 篇」→ 捨棄；在實際頻率內則保留。"""
+    likes = payload["overview"]["likes"]["mean"]
+    ppw = payload["overview"]["posts_per_week"]
+    cap = payload["posting_capacity"]["max_posts"]["2 週"]
+    assert cap == max(1, round(ppw * 2 * 1.2))
+    ev = [{"path": "overview.likes.mean", "value": likes}]
+    fine = _item(f"平均按讚 {likes}", ev, action=f"接下來兩週其中 {cap} 篇改用提問結尾。")
+    too_many = _item(f"平均按讚 {likes}", ev, action=f"下週的 {cap * 3} 篇貼文都改用提問結尾。")
+    assert len(validate([fine], payload)) == 1
+    assert validate([too_many], payload) == []
+    assert "posting_capacity" in SYSTEM_PROMPT and "週六" in SYSTEM_PROMPT
