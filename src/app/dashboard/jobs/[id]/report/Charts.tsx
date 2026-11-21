@@ -16,6 +16,9 @@ import {
 import { fmt, type Summary } from "@/lib/report";
 
 export const AXIS = { stroke: "var(--chart-axis)", tick: { fill: "var(--chart-muted)", fontSize: 12 } };
+/** 滑過或選取中的資料點一律改用強調色（--chart-highlight），其餘維持 --series-1。 */
+export const ACTIVE_BAR = { fill: "var(--chart-highlight)" };
+
 export const TOOLTIP_STYLE = {
   background: "var(--chart-surface)",
   border: "1px solid var(--chart-grid)",
@@ -141,7 +144,8 @@ export function TimeHeatmap({ time }: { time: Summary["time"] }) {
                     className="h-6 rounded-[3px]"
                     style={{
                       background: c ? `var(${SEQ[level]})` : "var(--seq-0)",
-                      outline: hover?.w === w && hover?.h === h ? "2px solid var(--chart-ink)" : undefined,
+                      outline: hover?.w === w && hover?.h === h ? "2px solid var(--chart-highlight)" : undefined,
+                      outlineOffset: 1,
                     }}
                   />
                 );
@@ -190,6 +194,7 @@ export function TypeChart({ types }: { types: Summary["types"] }) {
             <Bar
               dataKey="avg"
               fill="var(--series-1)"
+              activeBar={ACTIVE_BAR}
               radius={[0, 4, 4, 0]}
               barSize={18}
               label={{ position: "right", fill: "var(--chart-ink-2)", fontSize: 12, formatter: (v: unknown) => fmt(Number(v), 0) }}
@@ -230,10 +235,28 @@ export function LengthChart({ length }: { length: Summary["length"] }) {
               label={{ value: "字數", position: "insideBottom", offset: -8, fill: "var(--chart-muted)", fontSize: 12 }} />
             <YAxis type="number" dataKey="engagement" name="總互動" {...AXIS} tickFormatter={(v) => fmt(v, 0)} width={56} />
             <ZAxis range={[64, 64]} />
-            <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => fmt(Number(v), 0)} />
-            <Scatter name="貼文" data={normal} fill="var(--series-1)" stroke="var(--chart-surface)" strokeWidth={2} />
+            <Tooltip
+              cursor={{ stroke: "var(--chart-axis)", strokeDasharray: "3 3" }}
+              contentStyle={TOOLTIP_STYLE}
+              formatter={(v) => fmt(Number(v), 0)}
+            />
+            <Scatter
+              name="貼文"
+              data={normal}
+              fill="var(--series-1)"
+              stroke="var(--chart-surface)"
+              strokeWidth={2}
+              activeShape={{ fill: "var(--chart-highlight)", r: 7 }}
+            />
             {outliers.length > 0 && (
-              <Scatter name="異常值" data={outliers} fill="var(--chart-surface)" stroke="var(--series-1)" strokeWidth={2} />
+              <Scatter
+                name="異常值"
+                data={outliers}
+                fill="var(--chart-surface)"
+                stroke="var(--series-1)"
+                strokeWidth={2}
+                activeShape={{ fill: "var(--chart-surface)", stroke: "var(--chart-highlight)", r: 7 }}
+              />
             )}
           </ScatterChart>
         </ResponsiveContainer>
@@ -245,7 +268,70 @@ export function LengthChart({ length }: { length: Summary["length"] }) {
   );
 }
 
-// ------------------------------------------------------------------ 4. 常見關鍵字
+// ------------------------------------------------------------------ 4. 各時段平均互動
+
+const MIN_POSTS_FOR_BEST = 2; // 只有 1 篇的時段平均值不穩定，不標為「最佳」
+
+export function TimeEngagementChart({ time }: { time: Summary["time"] }) {
+  const [by, setBy] = useState<"weekday" | "hour">("weekday");
+  const data =
+    by === "weekday"
+      ? time.weekday.map((w) => ({ label: w.label, count: w.count, avg: w.avg_engagement }))
+      : time.hour.map((h) => ({ label: `${h.hour}`, count: h.count, avg: h.avg_engagement }));
+  const best = by === "weekday" ? time.best_weekday?.label : time.best_hour && `${time.best_hour.hour}:00`;
+  const reliable = data.filter((d) => d.count >= MIN_POSTS_FOR_BEST).length;
+
+  return (
+    <ChartCard
+      title="各時段平均互動"
+      subtitle={best ? `平均互動最高：${best}（台北時間）` : "台北時間"}
+      testId="chart-time-engagement"
+      table={
+        <SimpleTable
+          head={[by === "weekday" ? "星期" : "小時", "發文數", "平均互動"]}
+          rows={data.filter((d) => d.count > 0).map((d) => [by === "hour" ? `${d.label}:00` : d.label, d.count, fmt(d.avg)])}
+        />
+      }
+    >
+      <div className="flex gap-1 self-start rounded-full border border-foreground/15 p-0.5 text-xs" role="group" aria-label="統計單位">
+        {(["weekday", "hour"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setBy(k)}
+            aria-pressed={by === k}
+            className={`rounded-full px-3 py-1 transition-colors ${by === k ? "bg-foreground text-background" : "opacity-70 hover:opacity-100"}`}
+          >
+            {k === "weekday" ? "星期" : "小時"}
+          </button>
+        ))}
+      </div>
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 4 }}>
+            <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+            <XAxis dataKey="label" {...AXIS} interval={by === "hour" ? 2 : 0} />
+            <YAxis {...AXIS} width={48} tickFormatter={(v) => fmt(v, 0)} />
+            <Tooltip
+              cursor={{ fill: "var(--chart-grid)", opacity: 0.5 }}
+              contentStyle={TOOLTIP_STYLE}
+              labelFormatter={(l) => (by === "hour" ? `${l}:00–${Number(l) + 1}:00` : String(l))}
+              formatter={(v, _n, item) =>
+                item.payload.count ? [`${fmt(Number(v))}（${item.payload.count} 篇）`, "平均互動"] : ["沒有發文", ""]
+              }
+            />
+            <Bar dataKey="avg" fill="var(--series-1)" activeBar={ACTIVE_BAR} radius={[4, 4, 0, 0]} maxBarSize={28} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      {reliable < data.filter((d) => d.count > 0).length && (
+        <p className="text-xs text-[var(--chart-muted)]">只有 1 篇的時段平均值波動大，解讀時請搭配發文數。</p>
+      )}
+    </ChartCard>
+  );
+}
+
+// ------------------------------------------------------------------ 5. 常見關鍵字
 
 export function KeywordChart({ keywords }: { keywords: Summary["keywords"] }) {
   const data = keywords.keywords.slice(0, 10);
@@ -270,7 +356,7 @@ export function KeywordChart({ keywords }: { keywords: Summary["keywords"] }) {
             <YAxis type="category" dataKey="term" width={96} {...AXIS} interval={0} />
             <Tooltip cursor={{ fill: "var(--chart-grid)", opacity: 0.5 }} contentStyle={TOOLTIP_STYLE}
               formatter={(v) => [`${v} 篇`, "出現"]} />
-            <Bar dataKey="posts" fill="var(--series-1)" radius={[0, 4, 4, 0]} barSize={14} />
+            <Bar dataKey="posts" fill="var(--series-1)" activeBar={ACTIVE_BAR} radius={[0, 4, 4, 0]} barSize={14} />
           </BarChart>
         </ResponsiveContainer>
       </div>

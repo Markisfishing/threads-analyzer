@@ -15,6 +15,7 @@
   --series-2: #eb6834; /* orange：中互動 */
   --series-3: #1baf7a; /* aqua：低互動 */
   --series-4: #eda100; /* yellow：多帳號比較第 4 個 */
+  --chart-highlight: var(--series-2); /* 滑過／選取中的資料點 */
   --seq-0: #f0efec;
   --seq-1: #cde2fb;
   --seq-2: #9ec5f4;
@@ -86,6 +87,11 @@ body {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.6); opacity: 0.35; }
   }
+}
+
+/* 圖表格線：熱度圖獨占第一列，半寬圖表若為奇數張，最後一張撐滿整列，避免右下角空一格 */
+@media (min-width: 64rem) {
+  .chart-grid > :last-child:nth-child(even) { grid-column: 1 / -1; }
 }
 
 /* 依序淡入：在父層加 stagger，子元素依 --i 延遲 */

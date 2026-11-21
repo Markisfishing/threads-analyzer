@@ -12,7 +12,7 @@ import {
   type Overview,
   type TopPost,
 } from "@/lib/report";
-import { KeywordChart, LengthChart, TimeHeatmap, TypeChart } from "./Charts";
+import { KeywordChart, LengthChart, TimeEngagementChart, TimeHeatmap, TypeChart } from "./Charts";
 
 /** 分析報告（PRD F7）：總覽、Top posts、圖表、三群組、策略建議、資料限制。 */
 export function Report({ result }: { result: AnalysisResult }) {
@@ -26,10 +26,11 @@ export function Report({ result }: { result: AnalysisResult }) {
       </Section>
 
       <Section title="互動分析">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="chart-grid grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="lg:col-span-2">
             <TimeHeatmap time={summary.time} />
           </div>
+          <TimeEngagementChart time={summary.time} />
           <TypeChart types={summary.types} />
           <LengthChart length={summary.length} />
           <KeywordChart keywords={summary.keywords} />
