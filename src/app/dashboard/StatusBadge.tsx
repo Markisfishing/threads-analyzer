@@ -11,9 +11,15 @@ const TONE: Record<JobStatus, string> = {
   cancelled: "bg-foreground/10 opacity-70",
 };
 
+const ACTIVE = new Set<JobStatus>(["queued", "scraping", "cleaning", "analyzing"]);
+
 export function StatusBadge({ status }: { status: JobStatus }) {
   return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TONE[status]}`} data-status={status}>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium transition-colors duration-500 ${TONE[status]}`}
+      data-status={status}
+    >
+      {ACTIVE.has(status) && <span className="size-1.5 animate-pulse-dot rounded-full bg-current" aria-hidden />}
       {STATUS_LABEL[status]}
     </span>
   );

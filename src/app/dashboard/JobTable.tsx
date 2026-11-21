@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { selectionHint } from "@/lib/compare";
 import type { Job } from "@/lib/jobs";
 import { StatusBadge } from "./StatusBadge";
@@ -30,7 +30,7 @@ export function JobTable({ jobs }: { jobs: JobRow[] }) {
             type="button"
             disabled={hint !== null}
             onClick={() => router.push(`/dashboard/compare?ids=${selected.join(",")}`)}
-            className="rounded-full bg-foreground px-4 py-1.5 text-sm text-background disabled:opacity-40"
+            className="btn-primary py-1.5 disabled:opacity-40 disabled:active:scale-100"
             aria-describedby="compare-hint"
           >
             比較所選帳號
@@ -53,11 +53,15 @@ export function JobTable({ jobs }: { jobs: JobRow[] }) {
               <th className="py-2 font-medium">建立時間</th>
             </tr>
           </thead>
-          <tbody>
-            {jobs.map((job) => {
+          <tbody className="stagger">
+            {jobs.map((job, i) => {
               const comparable = COMPARABLE.has(job.status) && job.scraped_count > 0;
               return (
-                <tr key={job.id} className="border-b border-foreground/5">
+                <tr
+                  key={job.id}
+                  style={{ "--i": Math.min(i, 12) } as CSSProperties}
+                  className="border-b border-foreground/5 transition-colors hover:bg-foreground/[0.03]"
+                >
                   <td className="py-2 pr-2">
                     {comparable && (
                       <input

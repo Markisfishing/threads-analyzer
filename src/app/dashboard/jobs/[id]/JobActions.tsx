@@ -16,17 +16,19 @@ export function JobActions({ jobId, active }: { jobId: string; active: boolean }
       if (r?.error) setError(r.error);
     });
 
-  const btn = "rounded-full border px-3 py-1 text-sm disabled:opacity-60";
+  const btn = "rounded-full border px-3 py-1 text-sm transition-transform active:scale-95 disabled:opacity-60";
 
   return (
     <div className="flex flex-wrap items-center gap-2" data-testid="job-actions">
       {active ? (
         <button type="button" disabled={pending} onClick={() => run(() => cancelJob(jobId))} className={`${btn} border-foreground/30`}>
+          {pending && <span className="spinner mr-1.5 inline-block align-[-2px]" aria-hidden />}
           {pending ? "取消中…" : "取消任務"}
         </button>
       ) : (
         <>
           <button type="button" disabled={pending} onClick={() => run(() => rerunJob(jobId))} className={`${btn} border-foreground/30`}>
+            {pending && <span className="spinner mr-1.5 inline-block align-[-2px]" aria-hidden />}
             重跑
           </button>
           <button

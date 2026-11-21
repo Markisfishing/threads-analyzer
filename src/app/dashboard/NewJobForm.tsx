@@ -33,15 +33,16 @@ export function NewJobForm() {
       <button
         type="submit"
         disabled={pending}
-        className="h-10 rounded-full bg-foreground px-5 text-background disabled:opacity-60"
+        className="btn-primary h-10 px-5 disabled:opacity-60"
       >
+        {pending && <span className="spinner" aria-hidden />}
         {pending ? "建立中…" : "新增分析"}
       </button>
       {state.cache && (
         <div
           role="status"
           data-testid="cache-choice"
-          className="flex flex-col gap-2 rounded-lg border border-[var(--series-1)]/40 bg-[var(--series-1)]/5 p-3 text-sm sm:basis-full"
+          className="flex animate-fade-up flex-col gap-2 rounded-lg border border-[var(--series-1)]/40 bg-[var(--series-1)]/5 p-3 text-sm sm:basis-full"
         >
           <p>
             @{state.cache.username} 在 {state.cache.finishedLabel} 已完成分析（24 小時內），要直接使用這份結果嗎？

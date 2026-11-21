@@ -1,4 +1,5 @@
 import { formatTaipei } from "@/lib/jobs";
+import { CountUp } from "./CountUp";
 import {
   FEATURE_LABEL,
   compact,
@@ -60,7 +61,7 @@ export function Report({ result }: { result: AnalysisResult }) {
 
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-4">
+    <section className="flex animate-fade-up flex-col gap-4">
       <div className="flex flex-wrap items-baseline gap-x-3">
         <h2 className="text-lg font-semibold">{title}</h2>
         {note && <span className="text-sm text-[var(--chart-muted)]">{note}</span>}
@@ -92,11 +93,17 @@ function OverviewCards({ ov }: { ov: Overview }) {
     },
   ];
   return (
-    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="overview">
-      {cards.map((c) => (
-        <div key={c.label} className="rounded-xl border border-foreground/10 bg-surface p-3">
+    <dl className="stagger grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="overview">
+      {cards.map((c, i) => (
+        <div
+          key={c.label}
+          style={{ "--i": i } as React.CSSProperties}
+          className="lift rounded-xl border border-foreground/10 bg-surface p-3"
+        >
           <dt className="text-xs text-[var(--chart-ink-2)]">{c.label}</dt>
-          <dd className="mt-1 text-2xl font-semibold tabular-nums">{c.value}</dd>
+          <dd className="mt-1 text-2xl font-semibold tabular-nums">
+            <CountUp value={c.value} />
+          </dd>
           {c.sub && <dd className="text-xs text-[var(--chart-muted)]">{c.sub}</dd>}
         </div>
       ))}

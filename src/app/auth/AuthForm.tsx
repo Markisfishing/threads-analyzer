@@ -86,8 +86,9 @@ export function AuthForm({ mode, action, next, initialError, notice, providers =
           <button
             type="submit"
             disabled={pending}
-            className="h-10 rounded-full bg-foreground text-background disabled:opacity-60"
+            className="btn-primary h-10 disabled:opacity-60"
           >
+            {pending && <span className="spinner" aria-hidden />}
             {pending ? (isLogin ? "登入中…" : "註冊中…") : isLogin ? "登入" : "註冊"}
           </button>
         </form>

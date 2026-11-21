@@ -62,3 +62,81 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
 }
+
+/* ── 動畫（尊重「減少動態效果」設定：系統開啟時全部停用） ───────────── */
+@theme {
+  --animate-fade-up: fade-up 0.35s ease-out both;
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
+  --animate-pulse-dot: pulse-dot 1.2s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.6); opacity: 0.35; }
+  }
+}
+
+/* 依序淡入：在父層加 stagger，子元素依 --i 延遲 */
+.stagger > * {
+  animation: var(--animate-fade-up);
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+.skeleton {
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  animation: var(--animate-shimmer);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background: var(--foreground);
+  color: var(--background);
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.btn-primary:hover { opacity: 0.88; }
+.btn-primary:active { transform: scale(0.97); }
+
+/* 送出中的轉圈圖示 */
+.spinner {
+  width: 1em;
+  height: 1em;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 卡片 hover 微浮 */
+.lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.lift:hover { transform: translateY(-2px); box-shadow: 0 6px 18px -10px color-mix(in srgb, var(--foreground) 35%, transparent); }
+
+dialog[open] { animation: var(--animate-fade-up); }
+dialog::backdrop { animation: var(--animate-fade-in); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
