@@ -1,0 +1,24 @@
+# 一鍵啟動本機 Worker：docker compose up
+#   需要 .env（SUPABASE_URL、SUPABASE_SERVICE_ROLE_KEY，選填 GROQ_API_KEY、THREADS_STORAGE_STATE）
+# 離線報告（不需 Supabase）：docker compose run --rm report
+services:
+  worker:
+    build: .
+    image: threads-analyzer-worker
+    command: ["poll"]
+    env_file: .env
+    environment:
+      HEADLESS: "true"
+    volumes:
+      # 登入狀態只以唯讀方式掛載，不打包進映像（.env 設 THREADS_STORAGE_STATE=spike/storage_state.json）
+      - ./spike:/app/spike:ro
+    shm_size: 1gb  # Chromium 需要較大的共享記憶體
+    restart: unless-stopped
+
+  report:
+    image: threads-analyzer-worker
+    build: .
+    profiles: ["tools"]
+    command: ["report", "--input", "data/sample_posts.json", "--out", "reports/sample"]
+    volumes:
+      - ./reports:/app/reports

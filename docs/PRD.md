@@ -480,7 +480,7 @@ flowchart TD
 | T17 | 24h 快取 | Should | T5 | 0.5h | 第二次建立同帳號出現快取選項 |
 | T18 | 額外圖表（長度散佈、關鍵字） | Should | T11 | 0.5h | 報告共 4 張圖 |
 | T19 | E2E 測試 | Should | T15 | 1h | 登入→建立→看報告 E2E 通過 |
-| T21 | 一鍵啟動（docker compose 本機 Worker） | Could | T6 | 0.5h | `docker compose up` 啟動輪詢 Worker |
+| T21 | 一鍵啟動（docker compose 本機 Worker） | Could | T6 | 0.5h | `docker compose up` 啟動輪詢 Worker；`docker compose run --rm report` 產生範例報告 |
 | T22 | Google 登入＋Gmail SMTP 驗證信＋隱私權頁＋刪除帳號 | Should | T4 | 1.5h | AC1.6–1.9；設定步驟見 `docs/auth-setup.md` |
 | T23 | Facebook 登入（Meta 應用程式切 Live 模式；程式已完成，因 Meta 商家驗證需公司登記文件，個人無法完成，暫不啟用） | Could | T22 | 1h | AC1.6–1.8（Facebook） |
 

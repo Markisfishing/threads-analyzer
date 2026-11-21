@@ -35,7 +35,7 @@
 
 ## 安裝
 
-需求：Node.js 20+、Python 3.12、一個 Supabase 專案。
+需求：Node.js 20+、Python 3.12（或 Docker）、一個 Supabase 專案。
 
 ```powershell
 npm install
@@ -69,6 +69,18 @@ npm run dev                                      # 前端 http://localhost:3000
 .venv\Scripts\python -m worker poll              # 本機輪詢模式：持續領取排隊中的任務
 .venv\Scripts\python -m worker run --job-id <id> # 只執行指定任務（GitHub Actions 用）
 ```
+
+### Docker 一鍵啟動（本機 Worker）
+不需安裝 Python 或 Playwright，只要 Docker 與 `.env`：
+
+```powershell
+docker compose up -d                # 背景啟動輪詢 Worker，處理網站上建立的分析
+docker compose logs -f worker       # 查看執行記錄
+docker compose run --rm report      # 用範例資料產生 reports/sample（不需 Supabase）
+docker compose down                 # 停止
+```
+
+`.env` 與 `spike/storage_state.json` 不會打包進映像（見 `.dockerignore`），登入狀態以唯讀方式掛載。正式環境由 GitHub Actions 執行 Worker，Docker 用於本機開發或備援。
 
 ### 離線報告（不需 Supabase）
 讀取貼文 JSON 檔，直接輸出 Markdown 報告、CSV 與 JSON，格式見 [worker/offline.py](worker/offline.py)：

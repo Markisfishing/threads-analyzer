@@ -1,0 +1,7 @@
+# 只需要 worker/、data/、requirements.txt；機密與大型資料夾一律排除
+*
+!requirements.txt
+!worker/
+!data/
+**/__pycache__
+**/*.pyc
