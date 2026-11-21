@@ -4,6 +4,7 @@
   python -m worker poll [--once]         輪詢 queued 任務（本機開發／備援）
   python -m worker mark-crashed --job-id <uuid>  執行失敗時標記任務（GitHub Actions if: failure()）
   python -m worker check-config          檢查環境變數
+  python -m worker report --input data/sample_posts.json --out reports/sample  離線產出報告（不需 Supabase）
 """
 from __future__ import annotations
 
@@ -75,6 +76,30 @@ def cmd_mark_crashed(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_report(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from worker.offline import write_report
+
+    llm = None
+    if args.llm:
+        from worker.llm import GroqGenerator
+
+        s = load_settings()
+        if not s.groq_api_key:
+            print("未設定 GROQ_API_KEY，改用規則模板", file=sys.stderr)
+        else:
+            llm = GroqGenerator(s.groq_api_key, s.groq_model, timeout=s.llm_timeout_sec)
+    try:
+        paths = write_report(Path(args.input), Path(args.out), llm)
+    except (OSError, ValueError) as e:
+        print(f"無法產生報告：{e}", file=sys.stderr)
+        return 1
+    for p in paths:
+        print(p.as_posix())
+    return 0
+
+
 def cmd_poll(args: argparse.Namespace) -> int:
     from worker.pipeline import run_job
     from worker.stages import default_stages
@@ -124,6 +149,12 @@ def build_parser() -> argparse.ArgumentParser:
     mc.add_argument("--job-id", required=True)
     mc.add_argument("--run-url", default="")
     mc.set_defaults(func=cmd_mark_crashed)
+
+    rp = sub.add_parser("report", help="離線分析貼文 JSON 檔並輸出 Markdown／CSV／JSON")
+    rp.add_argument("--input", required=True, help="貼文 JSON 檔（格式見 worker/offline.py）")
+    rp.add_argument("--out", required=True, help="輸出資料夾")
+    rp.add_argument("--llm", action="store_true", help="使用 Groq 產生建議（需 GROQ_API_KEY）")
+    rp.set_defaults(func=cmd_report)
 
     sub.add_parser("check-config", help="檢查環境變數").set_defaults(func=cmd_check_config)
     return p

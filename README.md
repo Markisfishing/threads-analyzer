@@ -28,7 +28,9 @@
 | `worker/` | Python Worker：`scraper` 爬取、`cleaning` 清理、`metrics` 指標、`nlp` 三群組、`insights` 規則建議、`llm` Groq |
 | `supabase/migrations/` | 資料表、RLS policy、權限 |
 | `tests/` | `worker/` 單元、`integration/` 真實 Supabase、`e2e/` 瀏覽器、`live/` 真實 Threads |
-| `docs/` | PRD、T1 可行性調查、登入設定指南 |
+| `data/` | 範例資料 `sample_posts.json`（虛構 mock dataset，由 `scripts/make_sample_data.py` 產生） |
+| `reports/` | 範例報告：`sample/report.md`（Markdown，含圖表）、`posts.csv`、`analysis.json` |
+| `docs/` | PRD、爬取可行性調查、登入設定指南 |
 | `spike/` | T1 爬取測試腳本、產生登入狀態的腳本 |
 
 ## 安裝
@@ -67,6 +69,16 @@ npm run dev                                      # 前端 http://localhost:3000
 .venv\Scripts\python -m worker poll              # 本機輪詢模式：持續領取排隊中的任務
 .venv\Scripts\python -m worker run --job-id <id> # 只執行指定任務（GitHub Actions 用）
 ```
+
+### 離線報告（不需 Supabase）
+讀取貼文 JSON 檔，直接輸出 Markdown 報告、CSV 與 JSON，格式見 [worker/offline.py](worker/offline.py)：
+
+```powershell
+.venv\Scripts\python -m worker report --input data/sample_posts.json --out reports/sample        # 規則模板建議
+.venv\Scripts\python -m worker report --input data/sample_posts.json --out reports/sample --llm  # 改用 Groq（需 GROQ_API_KEY）
+```
+
+範例資料為虛構帳號，示範重複貼文、缺失欄位與異常值的處理；結果見 [reports/sample/report.md](reports/sample/report.md)。
 
 ### 產生 Threads 登入狀態（選填）
 未登入模式通常只能取得 17–28 篇。需要 30 篇以上時，用自己的帳號產生登入狀態：
