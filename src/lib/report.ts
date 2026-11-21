@@ -88,6 +88,7 @@ export type Insight = {
   priority: "P1" | "P2" | "P3";
   timeline: string;
   evidence?: number[];
+  evidence_paths?: string[]; // LLM 建議的數字來源路徑（例如 overview.replies.mean）
   source: "llm" | "rule";
 };
 
