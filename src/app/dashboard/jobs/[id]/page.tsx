@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { JOB_COLUMNS, formatTaipei, isActive, type Job } from "@/lib/jobs";
 import type { AnalysisResult } from "@/lib/report";
+import { ReportSkeleton } from "../../Skeletons";
 import { StatusBadge } from "../../StatusBadge";
 import { JobActions } from "./JobActions";
 import { JobProgress } from "./JobProgress";
@@ -26,12 +28,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/dash
   if (!data) notFound();
   const job = data as Job;
 
-  let result: AnalysisResult | null = null;
-  if (!isActive(job.status)) {
-    const { data: r } = await supabase.from("analysis_results").select("*").eq("job_id", id).maybeSingle();
-    result = (r as AnalysisResult | null) ?? null;
-  }
-  const displayName = result?.summary.overview.display_name ?? job.account_meta?.display_name;
+  const displayName = job.account_meta?.display_name;
 
   return (
     <div className="flex flex-col gap-6">
@@ -94,9 +91,18 @@ export default async function JobPage({ params, searchParams }: PageProps<"/dash
               </p>
             )}
           </section>
-          {result && <Report result={result} />}
+          <Suspense fallback={<ReportSkeleton />}>
+            <ReportSection jobId={job.id} />
+          </Suspense>
         </>
       )}
     </div>
   );
+}
+
+/** 報告內容較大，放在 Suspense 內串流；權限檢查（404）已在上方完成。 */
+async function ReportSection({ jobId }: { jobId: string }) {
+  const { supabase } = await requireUser(`/dashboard/jobs/${jobId}`);
+  const { data } = await supabase.from("analysis_results").select("*").eq("job_id", jobId).maybeSingle();
+  return data ? <Report result={data as AnalysisResult} /> : null;
 }
