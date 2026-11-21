@@ -63,3 +63,10 @@ def test_compare_rejects_bad_selection_and_foreign_jobs(page: Page, http, user, 
     page.goto(f"{BASE}/dashboard/compare?ids={mine},{theirs}")
     expect(page.locator("p[role=alert]")).to_contain_text("不屬於你")
     expect(page.get_by_test_id("compare-table")).to_have_count(0)
+
+
+def test_compare_tab_without_selection_shows_guide(page: Page, user):
+    login_as(page, user)
+    page.get_by_role("navigation", name="主要導覽").get_by_role("link", name="比較").click()
+    page.wait_for_url(f"{BASE}/dashboard/compare")
+    expect(page.get_by_test_id("compare-empty")).to_contain_text("勾選 2–4 個")
