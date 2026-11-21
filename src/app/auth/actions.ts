@@ -59,6 +59,26 @@ export async function signUp(_: AuthState, formData: FormData): Promise<AuthStat
   return { message: "已寄出驗證信，請到信箱點擊連結完成註冊。若幾分鐘內沒收到，請檢查垃圾郵件匣。", email };
 }
 
+/**
+ * 忘記密碼：寄出重設連結。點連結 → /auth/callback 換成 session → 帳號頁的「修改密碼」區塊。
+ * 不論 Email 是否存在都回相同訊息，避免洩漏帳號是否註冊。
+ */
+export async function requestPasswordReset(_: AuthState, formData: FormData): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!EMAIL_RE.test(email)) return { error: "請輸入有效的 Email", email };
+
+  const h = await headers();
+  const origin = h.get("origin") ?? `https://${h.get("host")}`;
+  const supabase = await createClient();
+  const next = "/dashboard/account?reset=1#password";
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+  });
+  if (error?.code === "over_email_send_rate_limit" || error?.code === "over_request_rate_limit")
+    return { error: "寄送太頻繁，請稍後再試", email };
+  return { message: "若這個 Email 已註冊，重設密碼的連結已寄出，請到信箱查看（也請檢查垃圾郵件匣）。", email };
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
