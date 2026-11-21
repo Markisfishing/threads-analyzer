@@ -72,7 +72,8 @@
   5. 第三方登入：`/auth/oauth?provider=` 產生 PKCE 驗證碼並導向 Supabase → Google／Facebook 授權 → `/auth/callback` 交換 session。按鈕只顯示 Supabase 後台已啟用的方式。同一 Email 的密碼帳號與第三方帳號由 Supabase 自動合併為同一使用者。
   6. 驗證信由自訂 SMTP（Gmail 應用程式密碼）寄出，避免 Supabase 內建寄信的頻率與收件人限制。
   7. 帳號頁可刪除帳號：輸入「刪除」確認後呼叫 `delete_my_account()`（security definer，只能刪自己），連帶刪除所有資料。隱私權政策與資料刪除說明公開於 `/privacy`（Google／Meta 上線要求）。
-- **輸出**：登入狀態、使用者 Email 顯示於右上角、登出按鈕。
+  8. 忘記密碼：`/forgot-password` 寄送重設連結；帳號頁可修改顯示名稱與密碼。
+- **輸出**：登入狀態；頂部導覽列以分頁切換頁面，使用者 Email 與登出收在右上角頭像選單。
 - **使用者可見狀態**：`未登入` / `登入中…` / `登入失敗（訊息）` / `已登入`。
 
 ### F2 建立分析任務（Must）
@@ -164,7 +165,7 @@
 ### F8 查看、重跑與刪除任務（Must）
 - **查看**：`/dashboard` 列出自己的任務（帳號、建立時間、狀態、貼文數），可依時間排序。
 - **重跑**：在完成／失敗任務點「重跑」→ 建立新 job（`parent_job_id` 指向原任務），保留舊結果供對照。
-- **刪除**：二次確認後刪除任務，連帶刪除 posts / results / logs（`ON DELETE CASCADE`）。進行中任務需先取消（`status = cancelled`，Worker 每批檢查並中止）。
+- **刪除**：報告頁「⋯」選單的「刪除分析」，二次確認後刪除任務，連帶刪除 posts / results / logs（`ON DELETE CASCADE`）。進行中任務需先取消（`status = cancelled`，Worker 每批檢查並中止）。
 
 ### F9 多帳號比較（Should，加分項目）
 - **輸入**：勾選 2–4 個自己已完成的任務。
@@ -172,7 +173,7 @@
 - **規則**：只能選自己的任務；同帳號多次任務以使用者勾選為準。
 
 ### F10 匯出 CSV / JSON（Should，加分項目）
-- 任務頁提供「下載貼文 CSV」「下載完整 JSON（貼文＋分析結果）」。
+- 任務頁提供「下載 Excel 報表」（總覽、Top 5、貼文工作表，欄名與網站一致）「下載貼文 CSV」「下載完整 JSON（貼文＋分析結果）」。
 - CSV 為 UTF-8 with BOM（Excel 開啟中文不亂碼）。
 - 透過 Next.js Route Handler 以使用者 session 查詢，受 RLS 保護。
 
@@ -186,7 +187,7 @@
 - **處理流程**：
   1. `StrategyGenerator` 介面，兩個實作：`GroqGenerator`（主要）、`RuleBasedGenerator`（fallback）。
   2. 呼叫 Groq Chat Completions（OpenAI 相容端點），模型由 `GROQ_MODEL` 設定，`temperature = 0.3`，要求 JSON 輸出。
-  3. 提示詞要求：每條建議必須引用報告中實際出現的數字作為依據，區分「觀察」與「推測」，附驗證方法、優先級（P1–P3）與建議執行時程。
+  3. 提示詞要求：每條建議必須引用報告中實際出現的數字作為依據，區分「觀察」與「推測」，附驗證方法、優先級（P1–P3）與建議執行時程。報告頁以文字顯示優先級：P1＝優先執行、P2＝小規模試驗、P3＝探索（例如「優先執行・觀察 1 週」），滑過顯示完整定義。
   4. 驗證回傳：JSON schema 檢查（3–5 條，每條含 `observation / hypothesis / action / validation / priority / timeline`）；檢查引用數字是否存在於 `summary`（防幻覺），不合格的條目捨棄。
   5. 逾時 20 秒、HTTP 429/5xx retry 2 次；仍失敗或合格條目 < 3 → 改用 `RuleBasedGenerator`。
 - **輸出**：`analysis_results.insights`，`generator` 記錄 `groq:<model>` 或 `rule_based_v1`。
@@ -356,7 +357,7 @@ flowchart TD
 ## 6. 驗收標準（Given / When / Then）
 
 ### F1 登入與權限
-- **AC1.1 成功**：Given 已驗證的帳號，When 輸入正確 Email/密碼，Then 導向 `/dashboard` 並顯示 Email。
+- **AC1.1 成功**：Given 已驗證的帳號，When 輸入正確 Email/密碼，Then 導向 `/dashboard`，頭像選單顯示 Email。
 - **AC1.2 失敗**：Given 錯誤密碼，When 登入，Then 顯示「Email 或密碼錯誤」，停留登入頁。
 - **AC1.3 保護路由**：Given 未登入，When 直接開 `/dashboard/jobs/<id>`，Then 導向 `/login?next=…`，登入後回到原頁。
 - **AC1.4 資料隔離（邊界）**：Given 使用者 A 有任務 X，When 使用者 B 以自己的 session 用 Supabase client 查 `analysis_jobs`、`posts` where `job_id = X`，Then 回傳 0 筆；開 `/dashboard/jobs/X` 顯示 404。
@@ -520,5 +521,6 @@ flowchart TD
 | 2026-11-20 | v0.2 | 依 Q1–Q4 回覆：加入登入 fallback（F3、E12、AC3.6–3.7）；LLM 改為 Groq＋規則 fallback，升為 Must（F12、E13、AC12）；Worker 改由 GitHub Actions 執行（D5、§7.1、T6a、E14）；多帳號比較與匯出改為 Should（D6）；更新環境變數、安全性、風險 R5–R7、拆解表 |
 | 2026-11-20 | v0.3 | T1 spike 完成：未登入 17–28 篇、登入 57–70 篇；F3 改為攔截 JSON、過濾非本人貼文、截斷至 max_posts；Python 改 3.12 |
 | 2026-11-20 | v0.4 | 依實作更新：Next.js 16 以 `proxy.ts` 取代 middleware、關閉 cacheComponents；Worker 移除 pandas／scikit-learn／supabase-py，改用 httpx 與純 Python 統計；情緒分析改內建詞表；T12–T14、T17 完成 |
+| 2026-11-21 | v0.7 | UI/UX 改版：頂部分頁導覽與頭像選單、忘記密碼與帳號頁改名稱／改密碼、列表搜尋排序與浮動比較列、報告頁章節導覽與「⋯」選單刪除；新增 Excel 報表匯出；LLM 驗證器新增星期一致與建議篇數不超過實際發文頻率兩項檢查 |
 | 2026-11-21 | v0.6 | 新增離線報告（data／reports）、Docker 一鍵啟動（T21）、404／錯誤頁、載入骨架與動畫、圖表選取強調色與「各時段平均互動」圖；互動率統一稱「粉絲基準互動率」並補充粉絲數時間點限制；LLM 建議改為 evidence 路徑核對（AC12.3）、送出指標定義與各時段樣本數、改寫 System Prompt（含提示注入防護） |
 | 2026-11-21 | v0.5 | 新增第三方登入（Google、Facebook）、Gmail SMTP 驗證信（Facebook 因 Meta 商家驗證限制暫不啟用）、`/privacy` 隱私權與資料刪除頁、帳號刪除（AC1.6–1.9、T22–T23）；LLM 預設模型改為 `openai/gpt-oss-120b`（Groq 已下架 llama-3.3-70b-versatile） |
