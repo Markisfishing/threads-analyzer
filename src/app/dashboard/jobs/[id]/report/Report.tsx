@@ -119,7 +119,7 @@ function OverviewCards({ ov, prev }: { ov: Overview; prev: Overview | null }) {
       label: "平均總互動",
       value: fmt(ov.engagement.mean, 0),
       sub: ov.outlier_count
-        ? `排除 ${ov.outlier_count} 篇異常值：${fmt(ov.engagement_excl_outliers.mean, 0)}`
+        ? `不含 ${ov.outlier_count} 篇爆文：${fmt(ov.engagement_excl_outliers.mean, 0)}`
         : `中位數 ${fmt(ov.engagement.median, 0)}`,
       delta: change(ov.engagement.mean, prev?.engagement?.mean),
     },
@@ -332,9 +332,7 @@ function GroupsView({ groups }: { groups: Groups }) {
           <FactorList title="失敗因素（低互動組較明顯）" items={groups.comparison.failure_factors} />
         </div>
       )}
-      <p className="text-xs text-[var(--chart-muted)]">
-        方法：{groups.method.grouping}；{groups.method.representatives}；{groups.method.nlp}。
-      </p>
+      <p className="text-xs text-[var(--chart-muted)]">依互動分數均分三組，比較各組的用詞與寫法。</p>
     </div>
   );
 }
@@ -366,9 +364,9 @@ const PRIORITY_STYLE: Record<Insight["priority"], string> = {
 
 /** 優先級的白話說明：卡片上顯示短標籤，滑過顯示完整定義。 */
 const PRIORITY_TEXT: Record<Insight["priority"], { short: string; long: string }> = {
-  P1: { short: "優先執行", long: "P1：證據充分且容易執行，建議先做" },
-  P2: { short: "小規模試驗", long: "P2：證據合理，建議先用少量貼文測試" },
-  P3: { short: "探索", long: "P3：樣本較少，屬於探索性發現" },
+  P1: { short: "優先執行", long: "證據充分、容易執行，建議先做" },
+  P2: { short: "小規模試驗", long: "先用少量貼文測試" },
+  P3: { short: "探索", long: "貼文數少，僅供參考" },
 };
 
 const FIELD_ICON: Record<string, string> = {
@@ -383,7 +381,7 @@ function InsightsView({ insights, generator }: { insights: Insight[]; generator:
   return (
     <div className="flex flex-col gap-3" data-testid="insights">
       <p className="text-sm text-[var(--chart-ink-2)]" data-testid="insight-source">
-        {fromLlm ? `AI 產生（Groq ${generator.slice(5)}）。AI 建議僅供參考，請以驗證方法確認。` : "規則模板產生。"}
+        {fromLlm ? "由 AI 產生，僅供參考。" : "依內建規則產生。"}
       </p>
       <ol className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {insights.map((it, i) => (

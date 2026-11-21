@@ -61,7 +61,7 @@ describe("buildWorkbook", () => {
     expect(posts.views[0]).toMatchObject({ state: "frozen", ySplit: 1 });
 
     const ins = wb.getWorksheet("策略建議")!;
-    expect(ins.getRow(2).getCell(2).value).toBe("P1");
+    expect(ins.getRow(2).getCell(2).value).toBe("優先執行");
     expect(ins.getRow(2).getCell(4).value).toBe("提問貼文平均留言 5");
   });
 

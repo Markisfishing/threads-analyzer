@@ -122,7 +122,7 @@ def render_markdown(result: dict, source_name: str) -> str:
         "",
         f"- 資料來源：`{source_name}`",
         f"- 樣本：{o['post_count']} 篇（{span}，Asia/Taipei）",
-        f"- 建議來源：{'Groq LLM' if result['generator'] != RULE_GENERATOR else '規則模板'}",
+        f"- 建議來源：{'AI' if result['generator'] != RULE_GENERATOR else '內建規則'}",
         "",
         "## 總覽指標",
         "",

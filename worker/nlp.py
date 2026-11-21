@@ -22,10 +22,10 @@ def assign_groups(posts: list[dict]) -> dict | None:
     """就地設定 group_label；樣本不足或分數全相同時回傳 None 並說明原因（AC6.2、AC6.3）。"""
     scored = [p for p in posts if p.get("score") is not None]
     if len(scored) < MIN_POSTS_FOR_GROUPS:
-        return {"skipped": True, "reason": f"樣本不足 {MIN_POSTS_FOR_GROUPS} 篇（目前 {len(scored)} 篇），未進行群組分析"}
+        return {"skipped": True, "reason": f"貼文少於 {MIN_POSTS_FOR_GROUPS} 篇，未分組"}
     scores = [p["score"] for p in scored]
     if len(set(scores)) == 1:
-        return {"skipped": True, "reason": "所有貼文互動分數相同，無法分組"}
+        return {"skipped": True, "reason": "每篇互動都一樣，無法分組"}
     p33, p67 = _tertiles(scores)
     for p in scored:
         p["group_label"] = "high" if p["score"] > p67 else "low" if p["score"] <= p33 else "mid"
@@ -125,9 +125,9 @@ def compare(high: dict, low: dict, high_terms: list[dict], low_terms: list[dict]
     ht = [t["term"] for t in high_terms[:5]]
     lt = [t["term"] for t in low_terms[:5]]
     if ht:
-        success.append("高互動貼文的特徵詞：" + "、".join(ht))
+        success.append("高互動貼文常用詞：" + "、".join(ht))
     if lt:
-        failure.append("低互動貼文的特徵詞：" + "、".join(lt))
+        failure.append("低互動貼文常用詞：" + "、".join(lt))
     return {"success_factors": success, "failure_factors": failure}
 
 
@@ -167,8 +167,8 @@ def analyze_groups(posts: list[dict]) -> dict:
 
 def _method() -> dict:
     return {
-        "score": "like + 2 × reply",
-        "grouping": "三分位數（P33 / P67）",
-        "representatives": f"每組 {REP_MIN}–{REP_MAX} 篇：high 取最高、low 取最低、mid 取最接近中位數",
-        "nlp": "jieba 斷詞 + TF-IDF 特徵詞（全帳號為語料）、文字特徵比例、詞典法情緒",
+        "score": "讚 + 2 × 回覆",
+        "grouping": "依互動分數均分三組",
+        "representatives": f"每組挑 {REP_MIN}–{REP_MAX} 篇代表貼文",
+        "nlp": "比較各組的用詞與寫法",
     }

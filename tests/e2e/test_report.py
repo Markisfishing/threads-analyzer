@@ -54,7 +54,7 @@ def test_completed_report_has_required_sections(page: Page, http, user):
     first = insights.first
     for label in ("觀察（數據）", "推測", "建議", "驗證方法"):
         expect(first.get_by_text(label, exact=True)).to_be_visible()
-    expect(page.get_by_test_id("insight-source")).to_contain_text("規則模板")
+    expect(page.get_by_test_id("insight-source")).to_contain_text("內建規則")
     expect(page.get_by_test_id("limitations")).to_contain_text("曝光數")
 
 
@@ -74,6 +74,6 @@ def test_partial_report_shows_group_skip_reason(page: Page, http, user):
                json={"error_code": "INSUFFICIENT_POSTS", "error_message": "僅取得 8 篇（目標 30），結果可信度較低"})
     login_as(page, user)
     page.goto(f"{BASE}/dashboard/jobs/{job_id}")
-    expect(page.get_by_test_id("groups-skipped")).to_contain_text("樣本不足 9 篇")
+    expect(page.get_by_test_id("groups-skipped")).to_contain_text("貼文少於 9 篇")
     expect(page.get_by_test_id("job-finished")).to_contain_text("僅取得 8 篇")
-    expect(page.get_by_test_id("limitations")).to_contain_text("僅取得 8 篇")
+    expect(page.get_by_test_id("limitations")).to_contain_text("只取得 8 篇")

@@ -180,8 +180,8 @@ export function TimeHeatmap({ time }: { time: Summary["time"] }) {
             ? `週${WD[hover.w]} ${hover.h}:00–${hover.h + 1}:00：${hovered?.count ?? 0} 篇` +
               (hovered?.avg_engagement != null ? `，平均互動 ${fmt(hovered.avg_engagement)}` : "")
             : best
-              ? `色塊越飽和＝發文越多；青綠框＝平均互動最高（週${WD[best.weekday]} ${best.hour}:00，${fmt(best.avg_engagement)}）`
-              : "色塊越飽和＝發文越多；滑過格子查看數字。"}
+              ? `顏色越深發文越多；框起來的是互動最高時段`
+              : "顏色越深發文越多。"}
         </p>
         <div className="flex items-center gap-1 text-xs text-[var(--chart-muted)]" data-testid="heatmap-legend">
           少
@@ -274,7 +274,7 @@ export function LengthChart({ length, texts = {} }: { length: Summary["length"];
       title="文字長度與互動"
       subtitle={
         length.spearman != null
-          ? `Spearman 相關係數 ${length.spearman}（${Math.abs(length.spearman) < 0.2 ? "幾乎無關" : length.spearman > 0 ? "正相關" : "負相關"}）`
+          ? `字數與互動${Math.abs(length.spearman) < 0.2 ? "幾乎無關" : length.spearman > 0 ? "正相關" : "負相關"}`
           : undefined
       }
       testId="chart-length"
@@ -342,7 +342,7 @@ export function LengthChart({ length, texts = {} }: { length: Summary["length"];
       </div>
       <p className="text-xs text-[var(--chart-muted)]">
         {trend && "虛線為趨勢線（排除異常值）。"}
-        {outliers.length > 0 && `空心點為異常值（IQR 法，共 ${outliers.length} 篇）。`}
+        {outliers.length > 0 && `空心點為爆文（${outliers.length} 篇）。`}
         滑過點可預覽貼文。
       </p>
     </ChartCard>
@@ -422,7 +422,7 @@ export function KeywordChart({ keywords }: { keywords: Summary["keywords"] }) {
   return (
     <ChartCard
       title="常見關鍵字"
-      subtitle="出現在幾篇貼文中（已排除停用詞）"
+      subtitle="出現在幾篇貼文中"
       testId="chart-keywords"
       table={
         <SimpleTable

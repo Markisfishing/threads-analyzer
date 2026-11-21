@@ -38,7 +38,7 @@ def test_missing_fields_and_bad_input(tmp_path):
     posts = raw_posts(30)
     posts[0]["likes"] = None
     result = analyze_file(_write(tmp_path, posts))
-    assert any("欄位缺失" in x for x in result["summary"]["limitations"])
+    assert any("缺少部分數字" in x for x in result["summary"]["limitations"])
     with pytest.raises(ValueError):
         load_input(_write(tmp_path, [], {"username": "x"}))
     assert main(["report", "--input", str(tmp_path / "nope.json"), "--out", str(tmp_path)]) == 1

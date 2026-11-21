@@ -30,7 +30,7 @@ def rule_best_time(summary: dict, groups: dict, top: dict) -> Insight | None:
         "title": f"{label}發文的平均互動最高",
         "observation": f"{label}發文 {pick['count']} 篇，平均互動 {_fmt(pick['avg_engagement'])}，"
                        f"是整體平均 {_fmt(overall)} 的 {lift:.1f} 倍（台北時間）。",
-        "hypothesis": "此時段目標受眾較活躍；但樣本數少，也可能受個別爆文影響。",
+        "hypothesis": "此時段目標受眾較活躍；但篇數少，也可能受個別爆文影響。",
         "action": f"接下來兩週把重要貼文集中在{label}發布。",
         "validation": f"兩週後比較{label}與其他時段的平均互動，差距仍 ≥ 1.2 倍才維持排程。",
         "priority": "P1" if lift >= 1.5 else "P2",
@@ -128,9 +128,9 @@ def rule_group_terms(summary: dict, groups: dict, top: dict) -> Insight | None:
     lo = groups["groups"]["low"]
     return {
         "title": "高互動貼文集中在特定主題",
-        "observation": f"高互動組（{hi['size']} 篇，分數 {hi['score_range'][0]}–{hi['score_range'][1]}）的特徵詞為"
+        "observation": f"高互動組（{hi['size']} 篇，分數 {hi['score_range'][0]}–{hi['score_range'][1]}）常用的詞是"
                        f"「{'、'.join(terms)}」；低互動組（{lo['size']} 篇）分數僅 {lo['score_range'][0]}–{lo['score_range'][1]}。",
-        "hypothesis": "這些主題與受眾興趣較契合；但特徵詞樣本少，需更多貼文確認。",
+        "hypothesis": "這些主題與受眾興趣較契合；但篇數少，需更多貼文確認。",
         "action": f"規劃一系列圍繞「{terms[0]}」的貼文。",
         "validation": "發布 5 篇相關主題貼文，檢查是否有 ≥ 3 篇落入高互動組。",
         "priority": "P2",

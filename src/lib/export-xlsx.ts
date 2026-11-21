@@ -49,6 +49,7 @@ const GROUP_LABEL: Record<string, { text: string; color: string }> = {
   low: { text: "低互動", color: "FFB3261E" },
 };
 const PRIORITY_FILL: Record<string, string> = { P1: "FFFDE2DD", P2: "FFFFF1D6", P3: "FFEDEFF2" };
+const PRIORITY_LABEL: Record<string, string> = { P1: "優先執行", P2: "小規模試驗", P3: "探索" };
 const NUM = "#,##0";
 const DEC = "#,##0.0";
 const PCT = "0.00%";
@@ -123,7 +124,7 @@ function overviewSheet(wb: ExcelJS.Workbook, job: XlsxJob, result: XlsxResult | 
       : "—"],
     ["每週發文", ov?.posts_per_week ?? "—", DEC],
     ["爬取模式", job.scrape_mode === "authenticated" ? "登入模式" : job.scrape_mode === "anonymous" ? "未登入" : "—"],
-    ["建議來源", result ? (result.generator.startsWith("rule") ? "規則模板" : `LLM（${result.generator}）`) : "—"],
+    ["建議來源", result ? (result.generator.startsWith("rule") ? "內建規則" : "AI") : "—"],
     ["分析者", analyst || "—"],
     ["匯出時間", exported, DATETIME],
   ];
@@ -144,7 +145,7 @@ function overviewSheet(wb: ExcelJS.Workbook, job: XlsxJob, result: XlsxResult | 
     statRow("轉發", ov.reposts, DEC),
     statRow("引用", ov.quotes, DEC),
     statRow("總互動", ov.engagement, DEC),
-    statRow("總互動（排除異常值）", ov.engagement_excl_outliers, DEC),
+    statRow("總互動（不含爆文）", ov.engagement_excl_outliers, DEC),
     statRow(RATE_LABEL, ov.engagement_rate_pct, PCT, 0.01),
   ];
   stats.forEach((s, i) => {
@@ -212,7 +213,7 @@ const POST_COLUMNS: { header: string; width: number }[] = [
   { header: "字數", width: 7 },
   { header: "Hashtag", width: 18 },
   { header: "提及帳號", width: 16 },
-  { header: "異常值", width: 8 },
+  { header: "爆文", width: 8 },
   { header: "貼文連結", width: 12 },
 ];
 
@@ -268,11 +269,11 @@ function postsSheet(wb: ExcelJS.Workbook, posts: XlsxPost[]) {
 function insightsSheet(wb: ExcelJS.Workbook, insights: Insight[]) {
   const ws = wb.addWorksheet("策略建議", { views: [{ state: "frozen", ySplit: 1 }] });
   ws.columns = [
-    { width: 5 }, { width: 8 }, { width: 26 }, { width: 40 }, { width: 34 }, { width: 34 }, { width: 34 }, { width: 9 },
+    { width: 5 }, { width: 11 }, { width: 26 }, { width: 40 }, { width: 34 }, { width: 34 }, { width: 34 }, { width: 9 },
   ];
   styleHeader(ws.addRow(["#", "優先級", "標題", "觀察（數據）", "推測（原因）", "建議行動", "驗證方法", "時程"]));
   insights.forEach((ins, i) => {
-    const r = ws.addRow([i + 1, ins.priority, ins.title, ins.observation, ins.hypothesis, ins.action, ins.validation, ins.timeline]);
+    const r = ws.addRow([i + 1, PRIORITY_LABEL[ins.priority] ?? ins.priority, ins.title, ins.observation, ins.hypothesis, ins.action, ins.validation, ins.timeline]);
     styleBody(r, false);
     r.eachCell((c) => (c.alignment = { wrapText: true, vertical: "top" }));
     r.getCell(1).alignment = { horizontal: "center", vertical: "top" };

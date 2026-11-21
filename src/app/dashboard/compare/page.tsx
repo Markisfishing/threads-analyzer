@@ -85,7 +85,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/dashboar
       <h1 className="text-2xl font-semibold">多帳號比較</h1>
       {rows.some((r) => r.status === "partial") && (
         <p role="status" className="rounded-lg border-l-4 border-amber-500 bg-amber-500/10 p-3 text-sm">
-          部分帳號為「部分完成」，樣本較少，比較時請留意。
+          部分帳號貼文數較少，比較時請留意。
         </p>
       )}
 
@@ -148,7 +148,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/dashboar
 
       <CompareTypeChart labels={labels} data={typeShareSeries(entries)} />
       <p className="text-xs text-muted">
-        互動 = 讚 + 留言 + 轉發 + 引用；粉絲基準互動率 = 互動 ÷ 爬取當下粉絲數（曝光數無法取得，不是曝光互動率）。各帳號樣本為最近貼文，非完整歷史。
+        互動＝讚＋留言＋轉發＋引用；互動率以爬取當下粉絲數計算。
       </p>
     </div>
   );

@@ -95,7 +95,7 @@ def test_groups_split_into_three_with_consistent_features():
 def test_groups_skipped_when_too_few():
     """AC6.2"""
     g = analyze_groups(cleaned(8))
-    assert g["skipped"] and "樣本不足 9 篇" in g["reason"]
+    assert g["skipped"] and "貼文少於 9 篇" in g["reason"]
 
 
 def test_groups_skipped_when_scores_equal():
@@ -104,7 +104,7 @@ def test_groups_skipped_when_scores_equal():
     for p in posts:
         p["score"] = 10
     g = analyze_groups(posts)
-    assert g["skipped"] and "相同" in g["reason"]
+    assert g["skipped"] and "一樣" in g["reason"]
 
 
 # ------------------------------------------------------------------ rule insights

@@ -41,20 +41,20 @@ def make_analyzer(settings: Settings, llm: GroqGenerator | None = None):
 def limitations(posts: list[dict], meta: dict, groups: dict) -> list[str]:
     """報告中的資料限制提示（F7 第 6 點）。"""
     out = [
-        "曝光數僅帳號本人可見，無法取得；互動率以粉絲數為分母（粉絲基準互動率），不是曝光互動率。",
-        "粉絲數為爬取當下的數字，不是每篇貼文發布時的粉絲數；較舊貼文的互動率可能被低估。",
+        "拿不到曝光數，互動率改以粉絲數計算。",
+        "粉絲數是爬取當下的數字，舊貼文的互動率可能偏低。",
     ]
     if len(posts) < 30:
-        out.append(f"僅取得 {len(posts)} 篇貼文（目標 30），統計結果可信度較低。")
+        out.append(f"只取得 {len(posts)} 篇貼文，結果僅供參考。")
     if not meta.get("follower_count"):
-        out.append("無法取得粉絲數，粉絲基準互動率未計算，Top posts 改依總互動排序。")
+        out.append("拿不到粉絲數，熱門貼文改依總互動排序。")
     missing = sum(1 for p in posts if p.get("missing_fields"))
     if missing:
-        out.append(f"{missing} 篇貼文有欄位缺失，平均值以有效樣本計算。")
+        out.append(f"{missing} 篇貼文缺少部分數字，平均時略過。")
     outliers = sum(1 for p in posts if p.get("is_outlier"))
     if outliers:
-        out.append(f"{outliers} 篇互動異常高（IQR 法），另提供排除異常值的平均。")
+        out.append(f"{outliers} 篇是爆文，另附不含爆文的平均。")
     if groups.get("skipped"):
         out.append(groups["reason"])
-    out.append("時段分析使用台北時間（Asia/Taipei）。")
+    out.append("時間以台北時間計。")
     return out
