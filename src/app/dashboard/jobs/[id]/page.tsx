@@ -81,7 +81,10 @@ export default async function JobPage({ params, searchParams }: PageProps<"/dash
               </p>
             )}
             {job.scraped_count > 0 && (
-              <p className="flex flex-wrap gap-3" data-testid="export-links">
+              <p className="flex flex-wrap items-center gap-3" data-testid="export-links">
+                <a href={`/api/jobs/${job.id}/export?format=xlsx`} className="btn-primary py-1.5" download>
+                  下載 Excel 報表
+                </a>
                 <a href={`/api/jobs/${job.id}/export?format=csv`} className="underline" download>
                   下載貼文 CSV
                 </a>

@@ -47,7 +47,7 @@ export function postsToCsv(posts: ExportPost[]): string {
 }
 
 /** 下載檔名：只保留安全字元。 */
-export function exportFilename(username: string, jobId: string, ext: "csv" | "json"): string {
+export function exportFilename(username: string, jobId: string, ext: "csv" | "json" | "xlsx"): string {
   const safe = username.replace(/[^a-zA-Z0-9._-]/g, "_") || "threads";
   return `threads-${safe}-${jobId.slice(0, 8)}.${ext}`;
 }
