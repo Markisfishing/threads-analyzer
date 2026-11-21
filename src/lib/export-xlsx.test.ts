@@ -70,6 +70,15 @@ describe("buildWorkbook", () => {
     expect(wb.worksheets.map((w) => w.name)).toEqual(["總覽", "貼文"]);
   });
 
+  it("總覽與檔案作者寫入分析者；沒有時顯示 —", async () => {
+    const rows = (wb: ExcelJS.Workbook) =>
+      wb.getWorksheet("總覽")!.getSheetValues().map((r) => (Array.isArray(r) ? r.slice(1, 3) : []));
+    const named = await load(await buildWorkbook(job, [], null, "小明"));
+    expect(rows(named)).toContainEqual(["分析者", "小明"]);
+    expect(named.creator).toBe("小明");
+    expect(rows(await load(await buildWorkbook(job, [], null)))).toContainEqual(["分析者", "—"]);
+  });
+
   it("toTaipeiDate 處理空值與無效日期", () => {
     expect(toTaipeiDate(null)).toBeNull();
     expect(toTaipeiDate("not-a-date")).toBeNull();

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { requireUser } from "@/lib/auth";
 import { sparkline, type ListStats } from "@/lib/job-list";
@@ -14,9 +15,27 @@ const SPARK_JOBS = 30;
 
 export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   const sp = await searchParams;
+  const { supabase, user } = await requireUser();
+  const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+  const name = profile?.display_name?.trim();
   return (
     <div className="flex animate-fade-up flex-col gap-6">
-      <h1 className="text-2xl font-semibold">我的分析</h1>
+      <div className="flex flex-col gap-1">
+        <p className="text-sm text-muted" data-testid="greeting">
+          {name ? (
+            `嗨，${name}`
+          ) : (
+            <>
+              嗨！
+              <Link href="/dashboard/account" className="link">
+                設定顯示名稱
+              </Link>
+              ，匯出的 Excel 報告會標示分析者。
+            </>
+          )}
+        </p>
+        <h1 className="text-2xl font-semibold">我的分析</h1>
+      </div>
       <NewJobForm />
       {sp.notice === "deleted" && (
         <p role="status" className="animate-fade-up rounded-lg border border-[var(--border)] p-3 text-sm">

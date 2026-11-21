@@ -55,7 +55,9 @@ export async function GET(request: Request, ctx: RouteContext<"/api/jobs/[id]/ex
     .maybeSingle();
 
   if (format === "xlsx") {
-    const buf = await buildWorkbook(job as XlsxJob, (posts ?? []) as XlsxPost[], (result as XlsxResult | null) ?? null);
+    const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", auth.user.id).maybeSingle();
+    const analyst = profile?.display_name || auth.user.email || null;
+    const buf = await buildWorkbook(job as XlsxJob, (posts ?? []) as XlsxPost[], (result as XlsxResult | null) ?? null, analyst);
     return new Response(new Uint8Array(buf), {
       headers: {
         ...headers,

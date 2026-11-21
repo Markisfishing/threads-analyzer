@@ -107,7 +107,7 @@ const statRow = (label: string, s: Stat | undefined, fmt: string, scale = 1) => 
   fmt,
 });
 
-function overviewSheet(wb: ExcelJS.Workbook, job: XlsxJob, result: XlsxResult | null) {
+function overviewSheet(wb: ExcelJS.Workbook, job: XlsxJob, result: XlsxResult | null, analyst: string | null) {
   const ws = wb.addWorksheet("總覽", { views: [{ showGridLines: false }] });
   ws.columns = [{ width: 44 }, { width: 18 }, { width: 18 }, { width: 12 }, { width: 12 }, { width: 18 }];
   const ov = result?.summary.overview;
@@ -115,7 +115,7 @@ function overviewSheet(wb: ExcelJS.Workbook, job: XlsxJob, result: XlsxResult | 
   title(ws, `@${job.target_username} 貼文互動分析`, "時間皆為台北時間（UTC+8）");
 
   const info: [string, ExcelJS.CellValue, string?][] = [
-    ["顯示名稱", ov?.display_name ?? "—"],
+    ["Threads 名稱", ov?.display_name ?? "—"],
     ["粉絲數", ov?.follower_count ?? "無法取得", NUM],
     ["分析篇數", job.scraped_count, NUM],
     ["貼文期間", ov?.first_post_at && ov?.last_post_at
@@ -124,6 +124,7 @@ function overviewSheet(wb: ExcelJS.Workbook, job: XlsxJob, result: XlsxResult | 
     ["每週發文", ov?.posts_per_week ?? "—", DEC],
     ["爬取模式", job.scrape_mode === "authenticated" ? "登入模式" : job.scrape_mode === "anonymous" ? "未登入" : "—"],
     ["建議來源", result ? (result.generator.startsWith("rule") ? "規則模板" : `LLM（${result.generator}）`) : "—"],
+    ["分析者", analyst || "—"],
     ["匯出時間", exported, DATETIME],
   ];
   for (const [k, v, fmt] of info) {
@@ -283,12 +284,20 @@ function insightsSheet(wb: ExcelJS.Workbook, insights: Insight[]) {
   return ws;
 }
 
-/** 產生 .xlsx；result 為 null（分析未完成）時只輸出總覽與貼文。 */
-export async function buildWorkbook(job: XlsxJob, posts: XlsxPost[], result: XlsxResult | null): Promise<Buffer> {
+/**
+ * 產生 .xlsx；result 為 null（分析未完成）時只輸出總覽與貼文。
+ * analyst：匯出者的顯示名稱（沒設定時用 Email），寫在總覽與檔案屬性的作者欄。
+ */
+export async function buildWorkbook(
+  job: XlsxJob,
+  posts: XlsxPost[],
+  result: XlsxResult | null,
+  analyst: string | null = null,
+): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Threads Analyzer";
+  wb.creator = analyst || "Threads Analyzer";
   wb.created = new Date();
-  overviewSheet(wb, job, result);
+  overviewSheet(wb, job, result, analyst);
   postsSheet(wb, posts);
   if (result?.insights?.length) insightsSheet(wb, result.insights);
   return Buffer.from(await wb.xlsx.writeBuffer());

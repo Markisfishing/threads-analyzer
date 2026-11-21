@@ -113,6 +113,8 @@ def test_edit_display_name_shows_in_user_menu(page: Page, http):
         page.reload()
         page.get_by_test_id("user-menu").click()
         expect(page.get_by_role("menu")).to_contain_text("測試小明")
+        page.goto(f"{BASE}/dashboard")
+        expect(page.get_by_test_id("greeting")).to_have_text("嗨，測試小明")
     finally:
         delete_user(http, u.id)
 
