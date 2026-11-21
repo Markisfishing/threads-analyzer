@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { JOB_COLUMNS, formatTaipei, isActive, type Job } from "@/lib/jobs";
-import type { AnalysisResult } from "@/lib/report";
+import type { AnalysisResult, Overview } from "@/lib/report";
 import { ReportSkeleton } from "../../Skeletons";
 import { StatusBadge } from "../../StatusBadge";
 import { JobActions } from "./JobActions";
@@ -82,20 +82,20 @@ export default async function JobPage({ params, searchParams }: PageProps<"/dash
             )}
             {job.scraped_count > 0 && (
               <p className="flex flex-wrap items-center gap-3" data-testid="export-links">
-                <a href={`/api/jobs/${job.id}/export?format=xlsx`} className="btn-primary py-1.5" download>
+                <a href={`/api/jobs/${job.id}/export?format=xlsx`} className="btn-primary btn-sm" download>
                   下載 Excel 報表
                 </a>
-                <a href={`/api/jobs/${job.id}/export?format=csv`} className="underline" download>
+                <a href={`/api/jobs/${job.id}/export?format=csv`} className="link" download>
                   下載貼文 CSV
                 </a>
-                <a href={`/api/jobs/${job.id}/export?format=json`} className="underline" download>
+                <a href={`/api/jobs/${job.id}/export?format=json`} className="link" download>
                   下載完整 JSON
                 </a>
               </p>
             )}
           </section>
           <Suspense fallback={<ReportSkeleton />}>
-            <ReportSection jobId={job.id} />
+            <ReportSection jobId={job.id} parentId={job.parent_job_id} />
           </Suspense>
         </>
       )}
@@ -104,8 +104,17 @@ export default async function JobPage({ params, searchParams }: PageProps<"/dash
 }
 
 /** 報告內容較大，放在 Suspense 內串流；權限檢查（404）已在上方完成。 */
-async function ReportSection({ jobId }: { jobId: string }) {
+async function ReportSection({ jobId, parentId }: { jobId: string; parentId: string | null }) {
   const { supabase } = await requireUser(`/dashboard/jobs/${jobId}`);
-  const { data } = await supabase.from("analysis_results").select("*").eq("job_id", jobId).maybeSingle();
-  return data ? <Report result={data as AnalysisResult} /> : null;
+  const [{ data }, { data: posts }, { data: parent }] = await Promise.all([
+    supabase.from("analysis_results").select("*").eq("job_id", jobId).maybeSingle(),
+    supabase.from("posts").select("post_id,text").eq("job_id", jobId).limit(1000),
+    parentId
+      ? supabase.from("analysis_results").select("overview:summary->overview").eq("job_id", parentId).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  if (!data) return null;
+  const texts = Object.fromEntries((posts ?? []).map((p) => [p.post_id, p.text ?? ""]));
+  const previous = (parent as { overview: Overview | null } | null)?.overview ?? null;
+  return <Report result={data as AnalysisResult} texts={texts} previous={previous} />;
 }

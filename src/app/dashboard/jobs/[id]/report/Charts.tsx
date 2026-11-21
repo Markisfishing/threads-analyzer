@@ -6,6 +6,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ReferenceLine,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -53,7 +54,7 @@ export function ChartCard({
 }) {
   const [showTable, setShowTable] = useState(false);
   return (
-    <figure className="flex min-w-0 flex-col gap-3 rounded-xl border border-foreground/10 bg-surface p-4" data-testid={testId}>
+    <figure className="flex min-w-0 flex-col gap-3 rounded-xl border border-[var(--border-soft)] bg-surface p-4" data-testid={testId}>
       <figcaption className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="font-medium">{title}</h3>
@@ -62,7 +63,7 @@ export function ChartCard({
         <button
           type="button"
           onClick={() => setShowTable((v) => !v)}
-          className="rounded-full border border-foreground/20 px-3 py-1 text-xs"
+          className="rounded-full border border-[var(--border)] px-3 py-1 text-xs hover:bg-[var(--border-soft)]"
           aria-pressed={showTable}
         >
           {showTable ? "顯示圖表" : "表格檢視"}
@@ -110,6 +111,10 @@ export function TimeHeatmap({ time }: { time: Summary["time"] }) {
   const cells = new Map(time.heatmap.map((c) => [`${c.weekday}-${c.hour}`, c]));
   const max = Math.max(1, ...time.heatmap.map((c) => c.count));
   const hovered = hover ? cells.get(`${hover.w}-${hover.h}`) : undefined;
+  // 平均互動最高、且至少 2 篇的格子用強調色外框標出
+  const best = time.heatmap
+    .filter((c) => c.count >= 2 && c.avg_engagement != null)
+    .sort((a, b) => b.avg_engagement! - a.avg_engagement!)[0];
 
   const subtitle = [
     time.most_posted_weekday && `最常在${time.most_posted_weekday.label}發文`,
@@ -154,7 +159,12 @@ export function TimeHeatmap({ time }: { time: Summary["time"] }) {
                     className="h-6 rounded-[3px]"
                     style={{
                       background: c ? `var(${SEQ[level]})` : "var(--seq-0)",
-                      outline: hover?.w === w && hover?.h === h ? "2px solid var(--chart-highlight)" : undefined,
+                      outline:
+                        hover?.w === w && hover?.h === h
+                          ? "2px solid var(--chart-highlight)"
+                          : best && best.weekday === w && best.hour === h
+                            ? "2px solid var(--chart-best)"
+                            : undefined,
                       outlineOffset: 1,
                     }}
                   />
@@ -164,12 +174,23 @@ export function TimeHeatmap({ time }: { time: Summary["time"] }) {
           ))}
         </div>
       </div>
-      <p className="min-h-5 text-sm text-[var(--chart-ink-2)]" aria-live="polite">
-        {hover
-          ? `週${WD[hover.w]} ${hover.h}:00–${hover.h + 1}:00：${hovered?.count ?? 0} 篇` +
-            (hovered?.avg_engagement != null ? `，平均互動 ${fmt(hovered.avg_engagement)}` : "")
-          : "顏色越深代表該時段發文越多；滑過格子查看數字。"}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="min-h-5 text-sm text-[var(--chart-ink-2)]" aria-live="polite">
+          {hover
+            ? `週${WD[hover.w]} ${hover.h}:00–${hover.h + 1}:00：${hovered?.count ?? 0} 篇` +
+              (hovered?.avg_engagement != null ? `，平均互動 ${fmt(hovered.avg_engagement)}` : "")
+            : best
+              ? `色塊越飽和＝發文越多；青綠框＝平均互動最高（週${WD[best.weekday]} ${best.hour}:00，${fmt(best.avg_engagement)}）`
+              : "色塊越飽和＝發文越多；滑過格子查看數字。"}
+        </p>
+        <div className="flex items-center gap-1 text-xs text-[var(--chart-muted)]" data-testid="heatmap-legend">
+          少
+          {["--seq-0", ...SEQ].map((v) => (
+            <span key={v} className="size-3 rounded-[2px]" style={{ background: `var(${v})` }} aria-hidden />
+          ))}
+          多（最多 {max} 篇）
+        </div>
+      </div>
     </ChartCard>
   );
 }
@@ -225,9 +246,29 @@ export function TypeChart({ types }: { types: Summary["types"] }) {
 
 // ------------------------------------------------------------------ 3. 文字長度 vs 互動
 
-export function LengthChart({ length }: { length: Summary["length"] }) {
+/** 最小平方法趨勢線（排除異常值），點太少就不畫。 */
+function trendLine(pts: { char_count: number; engagement: number }[]) {
+  if (pts.length < 3) return null;
+  const n = pts.length;
+  const mx = pts.reduce((s, p) => s + p.char_count, 0) / n;
+  const my = pts.reduce((s, p) => s + p.engagement, 0) / n;
+  const sxx = pts.reduce((s, p) => s + (p.char_count - mx) ** 2, 0);
+  if (!sxx) return null;
+  const k = pts.reduce((s, p) => s + (p.char_count - mx) * (p.engagement - my), 0) / sxx;
+  const xs = pts.map((p) => p.char_count);
+  const [x1, x2] = [Math.min(...xs), Math.max(...xs)];
+  return [
+    { x: x1, y: Math.max(0, my + k * (x1 - mx)) },
+    { x: x2, y: Math.max(0, my + k * (x2 - mx)) },
+  ] as const;
+}
+
+type LengthPoint = Summary["length"]["points"][number];
+
+export function LengthChart({ length, texts = {} }: { length: Summary["length"]; texts?: Record<string, string> }) {
   const normal = length.points.filter((p) => !p.is_outlier);
   const outliers = length.points.filter((p) => p.is_outlier);
+  const trend = trendLine(normal);
   return (
     <ChartCard
       title="文字長度與互動"
@@ -254,9 +295,30 @@ export function LengthChart({ length }: { length: Summary["length"] }) {
             <ZAxis range={[64, 64]} />
             <Tooltip
               cursor={{ stroke: "var(--chart-axis)", strokeDasharray: "3 3" }}
-              contentStyle={TOOLTIP_STYLE}
-              formatter={(v) => fmt(Number(v), 0)}
+              content={({ active, payload }) => {
+                const pt = active ? (payload?.[0]?.payload as LengthPoint | undefined) : undefined;
+                if (!pt) return null;
+                const text = texts[pt.post_id];
+                return (
+                  <div style={TOOLTIP_STYLE} className="max-w-64 p-2" data-testid="length-tooltip">
+                    <p className="tabular-nums">
+                      {pt.char_count} 字・總互動 {fmt(pt.engagement, 0)}
+                      {pt.is_outlier ? "（異常值）" : ""}
+                    </p>
+                    {text && <p className="mt-1 line-clamp-3 text-xs text-[var(--chart-ink-2)]">{text}</p>}
+                  </div>
+                );
+              }}
             />
+            {trend && (
+              <ReferenceLine
+                segment={trend}
+                stroke="var(--chart-best)"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                ifOverflow="extendDomain"
+              />
+            )}
             <Scatter
               name="貼文"
               data={normal}
@@ -278,9 +340,11 @@ export function LengthChart({ length }: { length: Summary["length"] }) {
           </ScatterChart>
         </ResponsiveContainer>
       </div>
-      {outliers.length > 0 && (
-        <p className="text-xs text-[var(--chart-muted)]">空心點為異常值（IQR 法，共 {outliers.length} 篇）</p>
-      )}
+      <p className="text-xs text-[var(--chart-muted)]">
+        {trend && "虛線為趨勢線（排除異常值）。"}
+        {outliers.length > 0 && `空心點為異常值（IQR 法，共 ${outliers.length} 篇）。`}
+        滑過點可預覽貼文。
+      </p>
     </ChartCard>
   );
 }

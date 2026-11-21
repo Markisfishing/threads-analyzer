@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef } from "react";
 
-const DURATION_MS = 700;
+const DURATION_MS = 500;
 
 /**
  * 數字從 0 跑到實際值（例如「1,234」「2.77%」「5.9 篇」）。
