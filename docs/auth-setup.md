@@ -78,6 +78,8 @@ Supabase 內建寄信服務每小時只能寄少量信件，且可能只寄給�
 
 ## 3. Facebook 登入（選做）
 
+> **目前狀態：未啟用。** Meta 要求「商家驗證」（需公司或行號登記文件）才能將應用程式切為正式模式，個人開發者無法完成，因此應用程式維持開發模式，Supabase 的 Facebook provider 保持關閉，登入頁不會顯示 Facebook 按鈕。程式已支援，日後完成商家驗證後依下列步驟開啟即可。開發模式下若要展示，可在 Meta「應用程式角色」加入測試者，再開啟 Supabase provider（只有名單上的帳號能登入）。
+
 Meta 要求公開的隱私權政策與資料刪除網址，因此**需先完成 Vercel 部署**。
 
 1. 到 [Meta for Developers](https://developers.facebook.com/) → 我的應用程式 → 建立應用程式，使用案例選「使用 Facebook 登入功能驗證使用者身分並要求資料」。

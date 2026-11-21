@@ -482,7 +482,7 @@ flowchart TD
 | T19 | E2E 測試 | Should | T15 | 1h | 登入→建立→看報告 E2E 通過 |
 | T21 | 一鍵啟動（docker compose 本機 Worker） | Could | T6 | 0.5h | `docker compose up` 啟動輪詢 Worker |
 | T22 | Google 登入＋Gmail SMTP 驗證信＋隱私權頁＋刪除帳號 | Should | T4 | 1.5h | AC1.6–1.9；設定步驟見 `docs/auth-setup.md` |
-| T23 | Facebook 登入（Meta 應用程式切 Live 模式） | Could | T22 | 1h | AC1.6–1.8（Facebook） |
+| T23 | Facebook 登入（Meta 應用程式切 Live 模式；程式已完成，因 Meta 商家驗證需公司登記文件，個人無法完成，暫不啟用） | Could | T22 | 1h | AC1.6–1.8（Facebook） |
 
 **Must 合計約 19h；Should 3.5h；Could 0.5h。**
 
@@ -520,4 +520,4 @@ flowchart TD
 | 2026-11-20 | v0.2 | 依 Q1–Q4 回覆：加入登入 fallback（F3、E12、AC3.6–3.7）；LLM 改為 Groq＋規則 fallback，升為 Must（F12、E13、AC12）；Worker 改由 GitHub Actions 執行（D5、§7.1、T6a、E14）；多帳號比較與匯出改為 Should（D6）；更新環境變數、安全性、風險 R5–R7、拆解表 |
 | 2026-11-20 | v0.3 | T1 spike 完成：未登入 17–28 篇、登入 57–70 篇；F3 改為攔截 JSON、過濾非本人貼文、截斷至 max_posts；Python 改 3.12 |
 | 2026-11-20 | v0.4 | 依實作更新：Next.js 16 以 `proxy.ts` 取代 middleware、關閉 cacheComponents；Worker 移除 pandas／scikit-learn／supabase-py，改用 httpx 與純 Python 統計；情緒分析改內建詞表；T12–T14、T17 完成 |
-| 2026-11-21 | v0.5 | 新增第三方登入（Google、Facebook）、Gmail SMTP 驗證信、`/privacy` 隱私權與資料刪除頁、帳號刪除（AC1.6–1.9、T22–T23）；LLM 預設模型改為 `openai/gpt-oss-120b`（Groq 已下架 llama-3.3-70b-versatile） |
+| 2026-11-21 | v0.5 | 新增第三方登入（Google、Facebook）、Gmail SMTP 驗證信（Facebook 因 Meta 商家驗證限制暫不啟用）、`/privacy` 隱私權與資料刪除頁、帳號刪除（AC1.6–1.9、T22–T23）；LLM 預設模型改為 `openai/gpt-oss-120b`（Groq 已下架 llama-3.3-70b-versatile） |
