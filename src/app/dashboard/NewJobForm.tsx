@@ -42,7 +42,7 @@ export function NewJobForm() {
         <div
           role="status"
           data-testid="cache-choice"
-          className="flex animate-fade-up flex-col gap-2 rounded-lg border border-[var(--series-1)]/40 bg-[var(--series-1)]/5 p-3 text-sm sm:basis-full"
+          className="flex animate-fade-up flex-col gap-2 rounded-lg border border-accent/40 bg-[var(--accent-soft)] p-3 text-sm sm:basis-full"
         >
           <p>
             @{state.cache.username} 在 {state.cache.finishedLabel} 已完成分析（24 小時內），要直接使用這份結果嗎？

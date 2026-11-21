@@ -33,7 +33,7 @@ export default async function JobPage({ params, searchParams }: PageProps<"/dash
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/dashboard" className="text-sm opacity-70 hover:underline">
+        <Link href="/dashboard" className="text-sm text-muted hover:underline">
           ← 我的分析
         </Link>
       </div>
@@ -48,13 +48,13 @@ export default async function JobPage({ params, searchParams }: PageProps<"/dash
         <h1 className="text-xl font-semibold">@{job.target_username}</h1>
         {displayName && <span className="text-[var(--chart-ink-2)]">{displayName}</span>}
         <StatusBadge status={job.status} />
-        <span className="text-sm opacity-70">建立於 {formatTaipei(job.created_at)}</span>
+        <span className="text-sm text-muted">建立於 {formatTaipei(job.created_at)}</span>
         <div className="ml-auto">
           <JobActions jobId={job.id} active={isActive(job.status)} />
         </div>
       </header>
       {job.parent_job_id && (
-        <p className="text-sm opacity-70">
+        <p className="text-sm text-muted">
           此任務重跑自{" "}
           <Link href={`/dashboard/jobs/${job.parent_job_id}`} className="underline">
             先前的分析

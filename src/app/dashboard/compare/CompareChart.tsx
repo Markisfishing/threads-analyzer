@@ -40,7 +40,7 @@ export function CompareTypeChart({
                 key={label}
                 dataKey={`s${i}`}
                 name={label}
-                fill={`var(--series-${i + 1})`}
+                fill={`var(--cmp-${i + 1})`}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={28}
               />

@@ -35,6 +35,6 @@ async function JobList() {
   const jobs = (data ?? []) as Job[];
 
   if (error) return <p role="alert" className="text-sm text-red-600">讀取任務失敗，請重新整理</p>;
-  if (jobs.length === 0) return <p className="opacity-70">還沒有任何分析，輸入一個 Threads 帳號開始吧。</p>;
+  if (jobs.length === 0) return <p className="text-muted">還沒有任何分析，輸入一個 Threads 帳號開始吧。</p>;
   return <JobTable jobs={jobs.map((j) => ({ ...j, createdLabel: formatTaipei(j.created_at) }))} />;
 }

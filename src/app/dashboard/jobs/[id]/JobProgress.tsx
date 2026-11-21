@@ -54,7 +54,7 @@ export function JobProgress({ initial }: { initial: Job }) {
           <li
             key={s}
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 transition-colors duration-500 ${
-              i < currentStep ? "bg-emerald-500/15" : i === currentStep ? "bg-sky-500/20 font-medium" : "bg-foreground/5 opacity-60"
+              i < currentStep ? "bg-emerald-500/15" : i === currentStep ? "bg-sky-500/20 font-medium" : "bg-foreground/5 text-muted"
             }`}
           >
             {i < currentStep && <span aria-hidden>✓</span>}
@@ -74,7 +74,7 @@ export function JobProgress({ initial }: { initial: Job }) {
           aria-valuenow={Math.round(percent)}
         >
           <div
-            className="h-full rounded-full bg-[var(--series-1)] transition-[width] duration-700 ease-out"
+            className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out"
             style={{ width: `${percent}%` }}
           />
         </div>

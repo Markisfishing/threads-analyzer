@@ -156,7 +156,7 @@ function TopPostsTable({ items, byRate }: { items: TopPost[]; byRate: boolean })
 // ------------------------------------------------------------------ 三群組
 
 const GROUP_ORDER: GroupKey[] = ["high", "mid", "low"];
-const GROUP_COLOR: Record<GroupKey, string> = { high: "var(--series-1)", mid: "var(--series-2)", low: "var(--series-3)" };
+const GROUP_COLOR: Record<GroupKey, string> = { high: "var(--group-high)", mid: "var(--group-mid)", low: "var(--group-low)" };
 
 function GroupsView({ groups }: { groups: Groups }) {
   if (groups.skipped || !groups.groups) {

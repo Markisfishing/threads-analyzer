@@ -35,14 +35,14 @@ export function JobTable({ jobs }: { jobs: JobRow[] }) {
           >
             比較所選帳號
           </button>
-          <span id="compare-hint" className="text-sm opacity-70" aria-live="polite">
+          <span id="compare-hint" className="text-sm text-muted" aria-live="polite">
             {hint ?? `已選 ${selected.length} 個`}
           </span>
         </div>
       )}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm" data-testid="job-list">
-          <thead className="border-b border-foreground/10 opacity-70">
+          <thead className="border-b border-foreground/10 text-muted">
             <tr>
               <th className="w-8 py-2 pr-2 font-medium">
                 <span className="sr-only">比較</span>
@@ -69,7 +69,7 @@ export function JobTable({ jobs }: { jobs: JobRow[] }) {
                         checked={selected.includes(job.id)}
                         onChange={() => toggle(job.id)}
                         aria-label={`加入比較 @${job.target_username}`}
-                        className="size-4 accent-[var(--series-1)]"
+                        className="size-4 accent-[var(--accent)]"
                       />
                     )}
                   </td>
@@ -82,7 +82,7 @@ export function JobTable({ jobs }: { jobs: JobRow[] }) {
                     <StatusBadge status={job.status} />
                   </td>
                   <td className="py-2 pr-4 tabular-nums">{job.scraped_count}</td>
-                  <td className="py-2 tabular-nums opacity-70">{job.createdLabel}</td>
+                  <td className="py-2 tabular-nums text-muted">{job.createdLabel}</td>
                 </tr>
               );
             })}

@@ -70,7 +70,8 @@ def test_privacy_page_is_public(page: Page):
 
 def test_account_page_shows_info(page: Page, user):
     login_as(page, user)
-    page.get_by_test_id("user-email").click()
+    page.get_by_test_id("user-menu").click()
+    page.get_by_role("menuitem", name="帳號設定").click()
     page.wait_for_url(f"{BASE}/dashboard/account")
     info = page.get_by_test_id("account-info")
     expect(info).to_contain_text(user.email)

@@ -5,6 +5,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -16,8 +17,17 @@ import {
 import { fmt, type Summary } from "@/lib/report";
 
 export const AXIS = { stroke: "var(--chart-axis)", tick: { fill: "var(--chart-muted)", fontSize: 12 } };
-/** 滑過或選取中的資料點一律改用強調色（--chart-highlight），其餘維持 --series-1。 */
+/** 滑過或選取中的資料點改用 --chart-highlight（藍），與「最佳」的青綠區分。 */
 export const ACTIVE_BAR = { fill: "var(--chart-highlight)" };
+
+/** 長條配色規則：最大值（或指定的最佳項）用強調色，其餘灰藍，讓重點一眼可見。 */
+export function bestCells<T>(data: T[], value: (d: T) => number | null | undefined, isBest?: (d: T) => boolean) {
+  const max = Math.max(...data.map((d) => value(d) ?? -Infinity));
+  return data.map((d, i) => {
+    const best = isBest ? isBest(d) : (value(d) ?? -Infinity) === max && max > 0;
+    return <Cell key={i} fill={best ? "var(--chart-best)" : "var(--chart-bar)"} />;
+  });
+}
 
 export const TOOLTIP_STYLE = {
   background: "var(--chart-surface)",
@@ -193,12 +203,19 @@ export function TypeChart({ types }: { types: Summary["types"] }) {
             />
             <Bar
               dataKey="avg"
-              fill="var(--series-1)"
+              fill="var(--chart-bar)"
               activeBar={ACTIVE_BAR}
               radius={[0, 4, 4, 0]}
               barSize={18}
-              label={{ position: "right", fill: "var(--chart-ink-2)", fontSize: 12, formatter: (v: unknown) => fmt(Number(v), 0) }}
-            />
+              label={{
+                position: "right",
+                fill: "var(--chart-ink-2)",
+                fontSize: 12,
+                formatter: (v: unknown) => (Number(v) === 0 ? "0（無資料）" : fmt(Number(v), 0)),
+              }}
+            >
+              {bestCells(data, (d) => (d.count > 0 ? d.avg : null))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -243,7 +260,7 @@ export function LengthChart({ length }: { length: Summary["length"] }) {
             <Scatter
               name="貼文"
               data={normal}
-              fill="var(--series-1)"
+              fill="var(--chart-bar)"
               stroke="var(--chart-surface)"
               strokeWidth={2}
               activeShape={{ fill: "var(--chart-highlight)", r: 7 }}
@@ -253,7 +270,7 @@ export function LengthChart({ length }: { length: Summary["length"] }) {
                 name="異常值"
                 data={outliers}
                 fill="var(--chart-surface)"
-                stroke="var(--series-1)"
+                stroke="var(--chart-bar)"
                 strokeWidth={2}
                 activeShape={{ fill: "var(--chart-surface)", stroke: "var(--chart-highlight)", r: 7 }}
               />
@@ -300,7 +317,7 @@ export function TimeEngagementChart({ time }: { time: Summary["time"] }) {
             type="button"
             onClick={() => setBy(k)}
             aria-pressed={by === k}
-            className={`rounded-full px-3 py-1 transition-colors ${by === k ? "bg-foreground text-background" : "opacity-70 hover:opacity-100"}`}
+            className={`rounded-full px-3 py-1 transition-colors ${by === k ? "bg-foreground text-background" : "text-muted hover:text-foreground"}`}
           >
             {k === "weekday" ? "星期" : "小時"}
           </button>
@@ -320,7 +337,9 @@ export function TimeEngagementChart({ time }: { time: Summary["time"] }) {
                 item.payload.count ? [`${fmt(Number(v))}（${item.payload.count} 篇）`, "平均互動"] : ["沒有發文", ""]
               }
             />
-            <Bar dataKey="avg" fill="var(--series-1)" activeBar={ACTIVE_BAR} radius={[4, 4, 0, 0]} maxBarSize={28} />
+            <Bar dataKey="avg" fill="var(--chart-bar)" activeBar={ACTIVE_BAR} radius={[4, 4, 0, 0]} maxBarSize={28}>
+              {bestCells(data, (d) => d.avg, (d) => (by === "hour" ? `${d.label}:00` : d.label) === best)}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -356,7 +375,9 @@ export function KeywordChart({ keywords }: { keywords: Summary["keywords"] }) {
             <YAxis type="category" dataKey="term" width={96} {...AXIS} interval={0} />
             <Tooltip cursor={{ fill: "var(--chart-grid)", opacity: 0.5 }} contentStyle={TOOLTIP_STYLE}
               formatter={(v) => [`${v} 篇`, "出現"]} />
-            <Bar dataKey="posts" fill="var(--series-1)" activeBar={ACTIVE_BAR} radius={[0, 4, 4, 0]} barSize={14} />
+            <Bar dataKey="posts" fill="var(--chart-bar)" activeBar={ACTIVE_BAR} radius={[0, 4, 4, 0]} barSize={14}>
+              {bestCells(data, (d) => d.posts)}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

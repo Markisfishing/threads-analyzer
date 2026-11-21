@@ -14,7 +14,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
       <h1 className="text-xl font-semibold">頁面暫時無法顯示</h1>
       <p className="text-sm text-[var(--chart-ink-2)]">
         可能是網路不穩或服務暫時忙碌，請稍後再試。
-        {error.digest && <span className="mt-1 block text-xs opacity-60">錯誤代碼：{error.digest}</span>}
+        {error.digest && <span className="mt-1 block text-xs text-muted">錯誤代碼：{error.digest}</span>}
       </p>
       <div className="flex gap-3">
         <button type="button" onClick={reset} className="btn-primary">

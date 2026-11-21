@@ -12,6 +12,7 @@ pytestmark = pytest.mark.e2e
 def test_login_success(page: Page, user):
     """AC1.1：正確帳密 → 導向 /dashboard 並顯示 Email。"""
     login_as(page, user)
+    page.get_by_test_id("user-menu").click()
     expect(page.get_by_test_id("user-email")).to_have_text(user.email)
 
 
@@ -35,7 +36,8 @@ def test_protected_route_redirects_and_returns(page: Page, user):
 
 def test_logout(page: Page, user):
     login_as(page, user)
-    page.get_by_role("button", name="登出").click()
+    page.get_by_test_id("user-menu").click()
+    page.get_by_role("menuitem", name="登出").click()
     page.wait_for_url(f"{BASE}/login")
     page.goto(f"{BASE}/dashboard")
     page.wait_for_url(f"{BASE}/login?next=*")

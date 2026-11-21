@@ -17,7 +17,7 @@ export default function Home() {
           登入開始分析
         </Link>
       </div>
-      <p className="text-sm opacity-60">
+      <p className="text-sm text-muted">
         <Link href="/privacy" className="underline">
           隱私權政策與資料刪除
         </Link>

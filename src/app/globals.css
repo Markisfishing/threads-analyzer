@@ -4,18 +4,43 @@
   --background: #f9f9f7;
   --foreground: #0b0b0b;
 
-  /* 圖表色彩（dataviz 參考調色盤，已驗證色盲安全） */
+  /* 品牌強調色（青綠）：主按鈕、連結、焦點框、圖表最佳值 */
+  --accent: #0f766e;          /* 白字對比 5.5:1 */
+  --accent-strong: #0b5f58;   /* hover */
+  --accent-ink: #ffffff;      /* 強調色上的文字 */
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+
+  /* 文字與邊框：輔助文字 ≥ 4.5:1（WCAG AA），邊框 30% */
+  --ink-2: #52514e;
+  --ink-muted: #6b6a65;       /* 5.1:1 */
+  --border: color-mix(in srgb, var(--foreground) 30%, transparent);
+  --border-soft: color-mix(in srgb, var(--foreground) 12%, transparent);
+  --input-bg: #ffffff;
+  --danger: #b3261e;
+
+  /* 圖表色彩（dataviz 調色盤，已用 validate_palette.js 驗證色盲安全） */
   --chart-surface: #fcfcfb;
   --chart-ink: #0b0b0b;
   --chart-ink-2: #52514e;
-  --chart-muted: #898781;
+  --chart-muted: #6b6a65;
   --chart-grid: #e1e0d9;
   --chart-axis: #c3c2b7;
-  --series-1: #2a78d6; /* blue：單一數列、高互動 */
-  --series-2: #eb6834; /* orange：中互動 */
-  --series-3: #1baf7a; /* aqua：低互動 */
-  --series-4: #eda100; /* yellow：多帳號比較第 4 個 */
-  --chart-highlight: var(--series-2); /* 滑過／選取中的資料點 */
+  --chart-bar: #738dab;       /* 一般長條：灰藍（3:1），讓重點跳出來 */
+  --chart-best: var(--accent); /* 最高值／最佳時段 */
+  --series-1: #2a78d6;        /* 單一數列、滑過中的資料點 */
+  --chart-highlight: var(--series-1);
+
+  /* 高／中／低互動：同一青綠色系由深到淺（ordinal，已驗證） */
+  --group-high: #0f5f58;
+  --group-mid: #2f8f85;
+  --group-low: #7fb4ac;
+
+  /* 多帳號比較：藍、橘、紫、洋紅（categorical，不與群組青綠、狀態色混用） */
+  --cmp-1: #2a78d6;
+  --cmp-2: #eb6834;
+  --cmp-3: #6250d6;
+  --cmp-4: #e87ba4;
+
   --seq-0: #f0efec;
   --seq-1: #cde2fb;
   --seq-2: #9ec5f4;
@@ -29,6 +54,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--chart-surface);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-muted: var(--ink-muted);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -38,16 +67,36 @@
     --background: #0d0d0d;
     --foreground: #f0efec;
 
+    --accent: #2dd4bf;        /* 背景對比 10.4:1 */
+    --accent-strong: #5eead4;
+    --accent-ink: #042f2e;    /* 7.8:1 */
+    --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+
+    --ink-2: #c3c2b7;
+    --ink-muted: #a3a29b;     /* 7.6:1 */
+    --border: color-mix(in srgb, var(--foreground) 30%, transparent);
+    --border-soft: color-mix(in srgb, var(--foreground) 14%, transparent);
+    --input-bg: #1a1a19;
+    --danger: #f2706b;
+
     --chart-surface: #1a1a19;
     --chart-ink: #f0efec;
     --chart-ink-2: #c3c2b7;
-    --chart-muted: #898781;
+    --chart-muted: #a3a29b;
     --chart-grid: #2c2c2a;
     --chart-axis: #383835;
+    --chart-bar: #5b7088;
     --series-1: #3987e5;
-    --series-2: #d95926;
-    --series-3: #199e70;
-    --series-4: #c98500;
+
+    --group-high: #5eead4;
+    --group-mid: #2a9d8f;
+    --group-low: #2e5652;
+
+    --cmp-1: #3987e5;
+    --cmp-2: #d95926;
+    --cmp-3: #9085e9;
+    --cmp-4: #d55181;
+
     --seq-0: #2c2c2a;
     --seq-1: #104281;
     --seq-2: #184f95;
@@ -66,13 +115,13 @@ body {
 
 /* ── 動畫（尊重「減少動態效果」設定：系統開啟時全部停用） ───────────── */
 @theme {
-  --animate-fade-up: fade-up 0.35s ease-out both;
+  --animate-fade-up: fade-up 0.28s ease-out both;
   --animate-fade-in: fade-in 0.25s ease-out both;
   --animate-shimmer: shimmer 1.4s ease-in-out infinite;
   --animate-pulse-dot: pulse-dot 1.2s ease-in-out infinite;
 
   @keyframes fade-up {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: none; }
   }
   @keyframes fade-in {
@@ -112,13 +161,73 @@ body {
   justify-content: center;
   gap: 0.5rem;
   border-radius: 9999px;
-  background: var(--foreground);
-  color: var(--background);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 500;
+  min-height: 2.75rem;
   padding: 0.5rem 1.25rem;
   font-size: 0.875rem;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition: transform 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
 }
-.btn-primary:hover { opacity: 0.88; }
+.btn-primary:hover { background: var(--accent-strong); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary.btn-sm { min-height: 2.25rem; padding: 0.375rem 1rem; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  min-height: 2.25rem;
+  padding: 0.375rem 1rem;
+  font-size: 0.875rem;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.btn-secondary:hover { background: var(--border-soft); }
+.btn-secondary:active { transform: scale(0.97); }
+.btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 表單欄位：統一 44px 高、30% 邊框、強調色焦點框 */
+.field {
+  width: 100%;
+  min-height: 2.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  padding: 0.5rem 0.75rem;
+  color: var(--foreground);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field::placeholder { color: var(--ink-muted); }
+.field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 1px var(--accent); }
+.field[aria-invalid="true"] { border-color: var(--danger); animation: shake 0.3s ease; }
+
+/* Chrome 自動填入會變淺藍底；改回主題底色 */
+.field:-webkit-autofill,
+.field:-webkit-autofill:hover,
+.field:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--foreground);
+  box-shadow: 0 0 0 1000px var(--input-bg) inset;
+  caret-color: var(--foreground);
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* 全站鍵盤焦點：強調色外框 */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.link { color: var(--accent); text-underline-offset: 3px; }
+.link:hover { text-decoration: underline; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
 .btn-primary:active { transform: scale(0.97); }
 
 /* 送出中的轉圈圖示 */

@@ -41,7 +41,7 @@ export function AuthForm({ mode, action, next, initialError, notice, providers =
               {p.label}
             </a>
           ))}
-          <div className="flex items-center gap-3 text-xs opacity-60" aria-hidden>
+          <div className="flex items-center gap-3 text-xs text-muted" aria-hidden>
             <span className="h-px flex-1 bg-foreground/20" />
             或使用 Email
             <span className="h-px flex-1 bg-foreground/20" />
@@ -94,7 +94,7 @@ export function AuthForm({ mode, action, next, initialError, notice, providers =
         </form>
       )}
 
-      <p className="text-sm opacity-70">
+      <p className="text-sm text-muted">
         {isLogin ? (
           <>
             還沒有帳號？<Link href="/signup" className="underline">註冊</Link>
@@ -105,7 +105,7 @@ export function AuthForm({ mode, action, next, initialError, notice, providers =
           </>
         )}
       </p>
-      <p className="text-xs opacity-60">
+      <p className="text-xs text-muted">
         {isLogin ? "登入" : "註冊"}即表示你同意本站的
         <Link href="/privacy" className="underline">
           隱私權政策

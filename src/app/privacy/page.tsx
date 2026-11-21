@@ -10,12 +10,12 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-12 text-sm leading-7">
       <div>
-        <Link href="/" className="opacity-70 hover:underline">
+        <Link href="/" className="text-muted hover:underline">
           ← Threads Analyzer
         </Link>
       </div>
       <h1 className="text-2xl font-semibold">隱私權政策與資料刪除</h1>
-      <p className="opacity-70">最後更新：{UPDATED}</p>
+      <p className="text-muted">最後更新：{UPDATED}</p>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-base font-semibold">我們收集的資料</h2>

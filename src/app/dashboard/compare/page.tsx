@@ -9,7 +9,7 @@ export const metadata = { title: "多帳號比較｜Threads Analyzer" };
 function Notice({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-4">
-      <Link href="/dashboard" className="text-sm opacity-70 hover:underline">
+      <Link href="/dashboard" className="text-sm text-muted hover:underline">
         ← 我的分析
       </Link>
       <p role="alert" className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
@@ -57,7 +57,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/dashboar
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/dashboard" className="text-sm opacity-70 hover:underline">
+      <Link href="/dashboard" className="text-sm text-muted hover:underline">
         ← 我的分析
       </Link>
       <h1 className="text-xl font-semibold">多帳號比較</h1>
@@ -71,7 +71,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/dashboar
         <table className="w-full text-left text-sm" data-testid="compare-table">
           <thead>
             <tr className="border-b border-foreground/10">
-              <th className="py-2 pr-4 font-medium opacity-70">指標</th>
+              <th className="py-2 pr-4 font-medium text-muted">指標</th>
               {rows.map((r, i) => (
                 <th key={r.jobId} scope="col" className="py-2 pr-4 font-medium">
                   <span className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/dashboar
           <tbody>
             {metrics.map((m) => (
               <tr key={m.label} className="border-b border-foreground/5">
-                <th scope="row" className="py-2 pr-4 font-normal opacity-70">
+                <th scope="row" className="py-2 pr-4 font-normal text-muted">
                   {m.label}
                 </th>
                 {rows.map((r) => (
@@ -102,7 +102,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/dashboar
       </div>
 
       <CompareTypeChart labels={labels} data={typeShareSeries(entries)} />
-      <p className="text-xs opacity-60">互動 = 讚 + 留言 + 轉發 + 引用；粉絲基準互動率 = 互動 ÷ 爬取當下粉絲數（曝光數無法取得，不是曝光互動率）。各帳號樣本為最近貼文，非完整歷史。</p>
+      <p className="text-xs text-muted">互動 = 讚 + 留言 + 轉發 + 引用；粉絲基準互動率 = 互動 ÷ 爬取當下粉絲數（曝光數無法取得，不是曝光互動率）。各帳號樣本為最近貼文，非完整歷史。</p>
     </div>
   );
 }

@@ -8,7 +8,7 @@ const TONE: Record<JobStatus, string> = {
   completed: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
   partial: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
   failed: "bg-red-500/15 text-red-700 dark:text-red-300",
-  cancelled: "bg-foreground/10 opacity-70",
+  cancelled: "bg-foreground/10 text-muted",
 };
 
 const ACTIVE = new Set<JobStatus>(["queued", "scraping", "cleaning", "analyzing"]);

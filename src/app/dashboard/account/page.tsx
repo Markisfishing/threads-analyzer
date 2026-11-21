@@ -13,24 +13,24 @@ export default async function AccountPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <Link href="/dashboard" className="text-sm opacity-70 hover:underline">
+      <Link href="/dashboard" className="text-sm text-muted hover:underline">
         ← 我的分析
       </Link>
       <h1 className="text-xl font-semibold">帳號</h1>
 
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-[8rem_1fr]" data-testid="account-info">
-        <dt className="opacity-70">Email</dt>
+        <dt className="text-muted">Email</dt>
         <dd>{user.email}</dd>
-        <dt className="opacity-70">名稱</dt>
+        <dt className="text-muted">名稱</dt>
         <dd>{profile?.display_name || "—"}</dd>
-        <dt className="opacity-70">登入方式</dt>
+        <dt className="text-muted">登入方式</dt>
         <dd>{methods.map((m) => PROVIDER_LABEL[m] ?? m).join("、") || "—"}</dd>
       </dl>
 
       <section className="flex flex-col gap-3 rounded-xl border border-red-500/30 p-4">
         <h2 className="font-semibold text-red-600 dark:text-red-400">刪除帳號</h2>
         <DeleteAccount />
-        <p className="text-xs opacity-60">
+        <p className="text-xs text-muted">
           詳見
           <Link href="/privacy#data-deletion" className="underline">
             隱私權政策
