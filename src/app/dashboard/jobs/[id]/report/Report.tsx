@@ -364,6 +364,13 @@ const PRIORITY_STYLE: Record<Insight["priority"], string> = {
   P3: "bg-[var(--border-soft)] text-muted",
 };
 
+/** 優先級的白話說明：卡片上顯示短標籤，滑過顯示完整定義。 */
+const PRIORITY_TEXT: Record<Insight["priority"], { short: string; long: string }> = {
+  P1: { short: "優先執行", long: "P1：證據充分且容易執行，建議先做" },
+  P2: { short: "小規模試驗", long: "P2：證據合理，建議先用少量貼文測試" },
+  P3: { short: "探索", long: "P3：樣本較少，屬於探索性發現" },
+};
+
 const FIELD_ICON: Record<string, string> = {
   "觀察（數據）": "M4 19V9m6 10V5m6 14v-7",
   推測: "M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3Z",
@@ -389,8 +396,11 @@ function InsightsView({ insights, generator }: { insights: Insight[]; generator:
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-medium">{it.title}</h3>
               <span className="flex shrink-0 items-center gap-1.5">
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLE[it.priority]}`}>
-                  {it.priority}・{it.timeline}
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLE[it.priority]}`}
+                  title={`${PRIORITY_TEXT[it.priority].long}；建議執行並觀察 ${it.timeline}`}
+                >
+                  {PRIORITY_TEXT[it.priority].short}・觀察 {it.timeline}
                 </span>
                 <CopyButton
                   text={[it.title, `觀察：${it.observation}`, `推測：${it.hypothesis}`, `建議：${it.action}`, `驗證：${it.validation}`].join("\n")}

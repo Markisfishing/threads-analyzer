@@ -15,7 +15,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
             <Logo className="size-7" />
             <span className="hidden sm:inline">Threads Analyzer</span>
           </Link>
-          <div className="flex-1 overflow-x-auto">
+          <div className="flex-1">
             <NavTabs />
           </div>
           <UserMenu email={user.email ?? ""} name={profile?.display_name ?? null} />
