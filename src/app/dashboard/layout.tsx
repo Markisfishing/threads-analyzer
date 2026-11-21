@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { Logo } from "@/app/Logo";
+import { ThemeToggle } from "@/app/ThemeToggle";
 import { NavTabs } from "./NavTabs";
 import { UserMenu } from "./UserMenu";
 
@@ -18,6 +19,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
           <div className="flex-1">
             <NavTabs />
           </div>
+          <ThemeToggle />
           <UserMenu email={user.email ?? ""} name={profile?.display_name ?? null} />
         </div>
       </header>

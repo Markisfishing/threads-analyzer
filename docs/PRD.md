@@ -521,6 +521,6 @@ flowchart TD
 | 2026-11-20 | v0.2 | 依 Q1–Q4 回覆：加入登入 fallback（F3、E12、AC3.6–3.7）；LLM 改為 Groq＋規則 fallback，升為 Must（F12、E13、AC12）；Worker 改由 GitHub Actions 執行（D5、§7.1、T6a、E14）；多帳號比較與匯出改為 Should（D6）；更新環境變數、安全性、風險 R5–R7、拆解表 |
 | 2026-11-20 | v0.3 | T1 spike 完成：未登入 17–28 篇、登入 57–70 篇；F3 改為攔截 JSON、過濾非本人貼文、截斷至 max_posts；Python 改 3.12 |
 | 2026-11-20 | v0.4 | 依實作更新：Next.js 16 以 `proxy.ts` 取代 middleware、關閉 cacheComponents；Worker 移除 pandas／scikit-learn／supabase-py，改用 httpx 與純 Python 統計；情緒分析改內建詞表；T12–T14、T17 完成 |
-| 2026-11-21 | v0.7 | UI/UX 改版：頂部分頁導覽與頭像選單、忘記密碼與帳號頁改名稱／改密碼、列表搜尋排序與浮動比較列、報告頁章節導覽與「⋯」選單刪除；新增 Excel 報表匯出；LLM 驗證器新增星期一致與建議篇數不超過實際發文頻率兩項檢查 |
+| 2026-11-21 | v0.7 | 主題切換（跟隨系統／亮色／暗色，存在 localStorage，繪製前套用避免閃白）；UI/UX 改版：頂部分頁導覽與頭像選單、忘記密碼與帳號頁改名稱／改密碼、列表搜尋排序與浮動比較列、報告頁章節導覽與「⋯」選單刪除；新增 Excel 報表匯出；LLM 驗證器新增星期一致與建議篇數不超過實際發文頻率兩項檢查 |
 | 2026-11-21 | v0.6 | 新增離線報告（data／reports）、Docker 一鍵啟動（T21）、404／錯誤頁、載入骨架與動畫、圖表選取強調色與「各時段平均互動」圖；互動率統一稱「粉絲基準互動率」並補充粉絲數時間點限制；LLM 建議改為 evidence 路徑核對（AC12.3）、送出指標定義與各時段樣本數、改寫 System Prompt（含提示注入防護） |
 | 2026-11-21 | v0.5 | 新增第三方登入（Google、Facebook）、Gmail SMTP 驗證信（Facebook 因 Meta 商家驗證限制暫不啟用）、`/privacy` 隱私權與資料刪除頁、帳號刪除（AC1.6–1.9、T22–T23）；LLM 預設模型改為 `openai/gpt-oss-120b`（Groq 已下架 llama-3.3-70b-versatile） |

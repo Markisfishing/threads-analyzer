@@ -62,49 +62,62 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0d0d0d;
-    --foreground: #f0efec;
+/* 暗色：<html data-theme> 由 layout 的 inline script 在繪製前設定（跟隨系統時依 prefers-color-scheme 解析），
+   使用者手動選的亮色／暗色會蓋過系統設定。Tailwind 的 dark: 也改看 data-theme。 */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-    --accent: #2dd4bf;        /* 背景對比 10.4:1 */
-    --accent-strong: #5eead4;
-    --accent-ink: #042f2e;    /* 7.8:1 */
-    --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+:root {
+  color-scheme: light;
+}
 
-    --ink-2: #c3c2b7;
-    --ink-muted: #a3a29b;     /* 7.6:1 */
-    --border: color-mix(in srgb, var(--foreground) 30%, transparent);
-    --border-soft: color-mix(in srgb, var(--foreground) 14%, transparent);
-    --input-bg: #1a1a19;
-    --danger: #f2706b;
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0d0d0d;
+  --foreground: #f0efec;
 
-    --chart-surface: #1a1a19;
-    --chart-ink: #f0efec;
-    --chart-ink-2: #c3c2b7;
-    --chart-muted: #a3a29b;
-    --chart-grid: #2c2c2a;
-    --chart-axis: #383835;
-    --chart-bar: #5b7088;
-    --series-1: #3987e5;
+  --accent: #2dd4bf;        /* 背景對比 10.4:1 */
+  --accent-strong: #5eead4;
+  --accent-ink: #042f2e;    /* 7.8:1 */
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
 
-    --group-high: #5eead4;
-    --group-mid: #2a9d8f;
-    --group-low: #2e5652;
+  --ink-2: #c3c2b7;
+  --ink-muted: #a3a29b;     /* 7.6:1 */
+  --border: color-mix(in srgb, var(--foreground) 30%, transparent);
+  --border-soft: color-mix(in srgb, var(--foreground) 14%, transparent);
+  --input-bg: #1a1a19;
+  --danger: #f2706b;
 
-    --cmp-1: #3987e5;
-    --cmp-2: #d95926;
-    --cmp-3: #9085e9;
-    --cmp-4: #d55181;
+  --chart-surface: #1a1a19;
+  --chart-ink: #f0efec;
+  --chart-ink-2: #c3c2b7;
+  --chart-muted: #a3a29b;
+  --chart-grid: #2c2c2a;
+  --chart-axis: #383835;
+  --chart-bar: #5b7088;
+  --series-1: #3987e5;
 
-    --seq-0: #2c2c2a;
-    --seq-1: #104281;
-    --seq-2: #184f95;
-    --seq-3: #1c5cab;
-    --seq-4: #2a78d6;
-    --seq-5: #5598e7;
-    --seq-6: #86b6ef;
-  }
+  --group-high: #5eead4;
+  --group-mid: #2a9d8f;
+  --group-low: #2e5652;
+
+  --cmp-1: #3987e5;
+  --cmp-2: #d95926;
+  --cmp-3: #9085e9;
+  --cmp-4: #d55181;
+
+  --seq-0: #2c2c2a;
+  --seq-1: #104281;
+  --seq-2: #184f95;
+  --seq-3: #1c5cab;
+  --seq-4: #2a78d6;
+  --seq-5: #5598e7;
+  --seq-6: #86b6ef;
+}
+
+/* 切換主題的瞬間暫停 transition，避免各元件各自漸變 */
+.theme-switching,
+.theme-switching * {
+  transition: none !important;
 }
 
 body {
