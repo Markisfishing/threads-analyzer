@@ -49,7 +49,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/dashboar
     { label: "粉絲數", value: (r) => (r.followers === null ? "—" : r.followers.toLocaleString("zh-TW")) },
     { label: "平均互動", value: (r) => fmt(r.avgEngagement) },
     { label: "互動中位數", value: (r) => fmt(r.medianEngagement) },
-    { label: "平均互動率", value: (r) => (r.avgRatePct === null ? "—" : `${fmt(r.avgRatePct, 2)}%`) },
+    { label: "平均粉絲基準互動率", value: (r) => (r.avgRatePct === null ? "—" : `${fmt(r.avgRatePct, 2)}%`) },
     { label: "每週發文", value: (r) => (r.postsPerWeek === null ? "—" : `${fmt(r.postsPerWeek)} 篇`) },
     { label: "互動最佳時段", value: (r) => r.bestTime ?? "—" },
     { label: "最常見類型", value: (r) => r.topType ?? "—" },
@@ -102,7 +102,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/dashboar
       </div>
 
       <CompareTypeChart labels={labels} data={typeShareSeries(entries)} />
-      <p className="text-xs opacity-60">互動 = 讚 + 留言 + 轉發 + 引用；互動率 = 互動 ÷ 粉絲數。各帳號樣本為最近貼文，非完整歷史。</p>
+      <p className="text-xs opacity-60">互動 = 讚 + 留言 + 轉發 + 引用；粉絲基準互動率 = 互動 ÷ 爬取當下粉絲數（曝光數無法取得，不是曝光互動率）。各帳號樣本為最近貼文，非完整歷史。</p>
     </div>
   );
 }

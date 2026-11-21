@@ -21,7 +21,7 @@ export function Report({ result }: { result: AnalysisResult }) {
     <div className="flex flex-col gap-10" data-testid="report">
       <OverviewCards ov={summary.overview} />
 
-      <Section title="Top 5 貼文" note={result.top_posts.sort_by === "engagement_rate" ? "依互動率排序" : "粉絲數無法取得，依總互動排序"}>
+      <Section title="Top 5 貼文" note={result.top_posts.sort_by === "engagement_rate" ? "依粉絲基準互動率排序" : "粉絲數無法取得，依總互動排序"}>
         <TopPostsTable items={result.top_posts.items} byRate={result.top_posts.sort_by === "engagement_rate"} />
       </Section>
 
@@ -82,7 +82,7 @@ function OverviewCards({ ov }: { ov: Overview }) {
     { label: "平均回覆", value: fmt(ov.replies.mean, 0), sub: `中位數 ${fmt(ov.replies.median, 0)}` },
     { label: "平均轉發", value: fmt(ov.reposts.mean, 0), sub: `引用 ${fmt(ov.quotes.mean, 0)}` },
     {
-      label: "平均互動率",
+      label: "平均粉絲基準互動率",
       value: ov.engagement_rate_pct.mean != null ? `${fmt(ov.engagement_rate_pct.mean, 2)}%` : "—",
       sub: ov.engagement_rate_pct.median != null ? `中位數 ${fmt(ov.engagement_rate_pct.median, 2)}%` : "無粉絲數",
     },
@@ -126,7 +126,7 @@ function TopPostsTable({ items, byRate }: { items: TopPost[]; byRate: boolean })
             <th className="px-3 py-2 text-right font-medium">按讚</th>
             <th className="px-3 py-2 text-right font-medium">回覆</th>
             <th className="px-3 py-2 text-right font-medium">轉發</th>
-            <th className="px-3 py-2 text-right font-medium">{byRate ? "互動率" : "總互動"}</th>
+            <th className="px-3 py-2 text-right font-medium">{byRate ? "粉絲基準互動率" : "總互動"}</th>
           </tr>
         </thead>
         <tbody>

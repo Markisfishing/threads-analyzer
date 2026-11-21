@@ -130,7 +130,7 @@ def render_markdown(result: dict, source_name: str) -> str:
         "|---|---|---|",
     ]
     for key, label in [("likes", "讚"), ("replies", "留言"), ("reposts", "轉發"), ("quotes", "引用"),
-                       ("engagement", "互動"), ("engagement_rate_pct", "互動率（%）"),
+                       ("engagement", "互動"), ("engagement_rate_pct", "粉絲基準互動率（%）"),
                        ("engagement_excl_outliers", "互動（排除異常值）")]:
         out.append(f"| {label} | {_n(o[key]['mean'])} | {_n(o[key]['median'])} |")
     out += [
@@ -138,9 +138,9 @@ def render_markdown(result: dict, source_name: str) -> str:
         f"粉絲數 {_n(o.get('follower_count'))}；每週約 {_n(o.get('posts_per_week'))} 篇；"
         f"異常值 {o.get('outlier_count', 0)} 篇；欄位缺失 {o.get('missing_count', 0)} 篇。",
         "",
-        f"## Top {len(top['items'])} 貼文（依{'互動率' if top['sort_by'] == 'engagement_rate' else '互動'}）",
+        f"## Top {len(top['items'])} 貼文（依{'粉絲基準互動率' if top['sort_by'] == 'engagement_rate' else '互動'}）",
         "",
-        "| # | 時間 | 內容 | 讚 | 留言 | 轉發+引用 | 互動率 |",
+        "| # | 時間 | 內容 | 讚 | 留言 | 轉發+引用 | 粉絲基準互動率 |",
         "|---|---|---|---|---|---|---|",
     ]
     for i, p in enumerate(top["items"], 1):

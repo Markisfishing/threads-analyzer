@@ -43,7 +43,7 @@ def test_compare_selection_limits_and_result(page: Page, http, user):
     expect(table.locator("thead th")).to_have_count(3)
     expect(table).to_contain_text(f"@{names[0]}")
     expect(table).to_contain_text(f"@{names[1]}")
-    expect(table.get_by_role("row", name="平均互動率")).to_be_visible()
+    expect(table.get_by_role("row", name="平均粉絲基準互動率")).to_be_visible()
     expect(page.get_by_role("status")).to_contain_text("部分完成")
 
     chart = page.get_by_test_id("chart-compare-types")
