@@ -177,6 +177,11 @@ def type_analysis(posts: list[dict]) -> list[dict]:
     return rows
 
 
+def ranked(counter: Counter, top: int) -> list[tuple]:
+    """依次數由高到低，同次數依字典序，確保每次執行結果相同（set 迭代順序會隨執行改變）。"""
+    return sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))[:top]
+
+
 def keyword_analysis(posts: list[dict], top: int = 20) -> dict:
     words: Counter[str] = Counter()
     tags: Counter[str] = Counter()
@@ -184,8 +189,8 @@ def keyword_analysis(posts: list[dict], top: int = 20) -> dict:
         words.update(set(keywords(p.get("text") or "")))  # 每篇只計一次（文件頻率）
         tags.update(p.get("hashtags") or [])
     return {
-        "keywords": [{"term": w, "posts": c} for w, c in words.most_common(top)],
-        "hashtags": [{"tag": t, "count": c} for t, c in tags.most_common(top)],
+        "keywords": [{"term": w, "posts": c} for w, c in ranked(words, top)],
+        "hashtags": [{"tag": t, "count": c} for t, c in ranked(tags, top)],
     }
 
 

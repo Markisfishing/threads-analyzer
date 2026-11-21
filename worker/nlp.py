@@ -70,7 +70,7 @@ def tfidf_top_terms(corpus: list[list[str]], doc_ids: list[int], top: int = 10) 
         for t, c in tf.items():
             scores[t] += (c / len(doc) * idf[t]) / norm
     k = max(len(doc_ids), 1)
-    return [{"term": t, "score": round(s / k, 4)} for t, s in scores.most_common(top)]
+    return [{"term": t, "score": round(s / k, 4)} for t, s in sorted(scores.items(), key=lambda kv: (-kv[1], kv[0]))[:top]]
 
 
 def features(posts: list[dict]) -> dict:
